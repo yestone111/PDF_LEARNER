@@ -1,0 +1,27 @@
+{
+  "name": "ai-knowledge-navigator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AI Knowledge Navigator —— 本地优先的 PDF 知识图谱阅读器",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@12.8.1",
+  "scripts": {
+    "dev": "concurrently -k -n web,server -c cyan,magenta \"pnpm --filter @akn/web dev\" \"pnpm --filter @akn/server dev\"",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "verify:ui": "node scripts/ui-check.mjs",
+    "build:plugin": "node scripts/build-plugin.mjs",
+    "test:plugin": "node scripts/plugin-selftest.mjs",
+    "plugin:install": "dsh plugin --profile web add ./plugin",
+    "plugin:uninstall": "dsh plugin --profile web remove akn",
+    "verify:outline": "node scripts/outline-encoding-check.mjs",
+    "verify:language": "node scripts/language-check.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.7"
+  }
+}

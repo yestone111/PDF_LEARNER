@@ -1,0 +1,243 @@
+@import 'tailwindcss';
+
+/*
+ * 主题令牌。
+ *
+ * 组件只允许使用 `akn-*` 语义色（bg-akn-bg / text-akn-ink / border-akn-border …），
+ * 具体色值全部集中在这里，由 <html data-theme> 切换：
+ *   - parchment（默认）：羊皮卷暖色，长时间阅读更舒服；
+ *   - night：原来的深色主题，夜间使用。
+ *
+ * 注意：@theme 里的颜色值用 var() 引用 --akn-*，因此运行时切换只改一个属性，
+ * 不需要重新构建，也不会出现「有的组件没换色」。
+ */
+@theme {
+  --color-akn-bg: var(--akn-bg);
+  --color-akn-panel: var(--akn-panel);
+  --color-akn-sunken: var(--akn-sunken);
+  --color-akn-raised: var(--akn-raised);
+  --color-akn-border: var(--akn-border);
+  --color-akn-ink: var(--akn-ink);
+  --color-akn-muted: var(--akn-muted);
+  --color-akn-accent: var(--akn-accent);
+  --color-akn-grid: var(--akn-grid);
+  --color-akn-danger: var(--akn-danger);
+  --color-akn-danger-soft: var(--akn-danger-soft);
+  --color-akn-warn: var(--akn-warn);
+  --color-akn-warn-soft: var(--akn-warn-soft);
+  --color-akn-ok: var(--akn-ok);
+  --color-akn-ok-soft: var(--akn-ok-soft);
+  --color-akn-scrim: var(--akn-scrim);
+}
+
+/* ---------- 羊皮卷（默认） ---------- */
+:root,
+:root[data-theme='parchment'] {
+  color-scheme: light;
+  --akn-bg: #f4ead6;
+  --akn-panel: #fbf4e4;
+  --akn-sunken: #ecdfc4;
+  --akn-raised: #e6d7b8;
+  --akn-border: #d6c5a4;
+  --akn-ink: #3b3025;
+  --akn-muted: #6f5f49;
+  --akn-accent: #834a20;
+  --akn-grid: #ddccae;
+  --akn-danger: #9a2c1c;
+  --akn-danger-soft: rgba(154, 44, 28, 0.1);
+  --akn-warn: #805400;
+  --akn-warn-soft: rgba(138, 90, 0, 0.12);
+  --akn-ok: #2f6b3a;
+  --akn-ok-soft: rgba(47, 107, 58, 0.12);
+  --akn-scrim: rgba(59, 48, 37, 0.42);
+}
+
+/* ---------- 夜读（原深色） ---------- */
+:root[data-theme='night'] {
+  color-scheme: dark;
+  --akn-bg: #0b1020;
+  --akn-panel: #141a2f;
+  --akn-sunken: rgba(0, 0, 0, 0.28);
+  --akn-raised: rgba(255, 255, 255, 0.06);
+  --akn-border: #2a3352;
+  --akn-ink: #e8ecf8;
+  --akn-muted: #98a2c0;
+  --akn-accent: #6ea8fe;
+  --akn-grid: #243049;
+  --akn-danger: #fca5a5;
+  --akn-danger-soft: rgba(239, 68, 68, 0.1);
+  --akn-warn: #fcd34d;
+  --akn-warn-soft: rgba(245, 158, 11, 0.15);
+  --akn-ok: #86efac;
+  --akn-ok-soft: rgba(16, 185, 129, 0.1);
+  --akn-scrim: rgba(0, 0, 0, 0.55);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-akn-bg);
+  color: var(--color-akn-ink);
+  transition: background-color 160ms ease, color 160ms ease;
+  font-family:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 点图谱节点 → 跳转后临时高亮原文（flashQuote.ts 添加/移除该类） */
+@keyframes akn-flash-pulse {
+  0%,
+  100% {
+    background-color: transparent;
+  }
+  25%,
+  60% {
+    /* 只做很淡的底纹，主视觉交给下划线 */
+    background-color: rgba(250, 204, 21, 0.22);
+  }
+}
+
+.textLayer span.akn-flash {
+  animation: akn-flash-pulse 1.3s ease-in-out 2;
+  border-radius: 2px;
+}
+
+@keyframes akn-page-flash-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+  }
+  20%, 70% {
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.55);
+  }
+}
+
+@keyframes akn-underline-pulse {
+  0%, 100% {
+    background-color: rgba(250, 204, 21, 0.55);
+    box-shadow: 0 0 6px 1px rgba(250, 204, 21, 0.35);
+  }
+  50% {
+    background-color: rgba(250, 204, 21, 1);
+    box-shadow: 0 0 14px 3px rgba(250, 204, 21, 0.65);
+  }
+}
+
+/* 跳到原文时：命中文字行底部的下划线闪烁（多行 = 多条） */
+.akn-flash-box {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  border-radius: 2px;
+  background-color: rgba(250, 204, 21, 0.85);
+  animation: akn-underline-pulse 0.9s ease-in-out 3;
+}
+
+/* 跳到原文时的页面级闪烁（仅当引文匹配不到时兜底） */
+.page.akn-page-flash {
+  animation: akn-page-flash-pulse 1s ease-in-out 2;
+  border-radius: 6px;
+}
+
+/* ---------- TipTap 笔记编辑器 ---------- */
+.akn-note-editor {
+  min-height: 240px;
+  outline: none;
+  font-size: 12px;
+  line-height: 1.75;
+  color: var(--color-akn-ink);
+}
+
+.akn-note-editor p {
+  margin: 0.5em 0;
+}
+
+.akn-note-editor h1 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0.8em 0 0.4em;
+}
+
+.akn-note-editor h2 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0.8em 0 0.35em;
+}
+
+.akn-note-editor h3 {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0.7em 0 0.3em;
+}
+
+.akn-note-editor ul,
+.akn-note-editor ol {
+  padding-left: 1.2em;
+  margin: 0.4em 0;
+}
+
+.akn-note-editor ul {
+  list-style: disc;
+}
+
+.akn-note-editor ol {
+  list-style: decimal;
+}
+
+.akn-note-editor pre {
+  background: var(--akn-sunken);
+  border: 1px solid var(--color-akn-border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  overflow-x: auto;
+}
+
+.akn-note-editor code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--akn-raised);
+  border-radius: 3px;
+  padding: 0 3px;
+}
+
+.akn-note-editor .akn-note-card,
+.akn-note-editor .akn-note-chat {
+  border-left: 3px solid var(--color-akn-accent);
+  background: rgba(110, 168, 254, 0.08);
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin: 8px 0;
+  font-size: 11px;
+  color: var(--color-akn-ink);
+}
+
+.akn-note-editor .akn-note-quote {
+  border-left: 3px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin: 8px 0;
+  font-size: 11px;
+  white-space: pre-wrap;
+  color: var(--color-akn-ink);
+}
+
+.akn-note-editor .akn-note-image {
+  max-width: 100%;
+  border-radius: 6px;
+  border: 1px solid var(--color-akn-border);
+  margin: 8px 0;
+}
+
+.akn-note-editor .ProseMirror-selectednode,
+.akn-note-editor [data-node-card].ProseMirror-selectednode,
+.akn-note-editor [data-chat-card].ProseMirror-selectednode {
+  outline: 2px solid var(--color-akn-accent);
+  outline-offset: 1px;
+}

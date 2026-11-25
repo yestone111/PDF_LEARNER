@@ -1,0 +1,13 @@
+packages:
+  - web
+  - server
+
+# pnpm 11+ 用 allowBuilds 取代了 onlyBuiltDependencies / ignoredBuiltDependencies。
+# 显式声明依赖安装脚本的批准结果，保证 `pnpm install` 在干净环境下可复现，
+# 不会因为「等待人工 approve-builds」而失败。
+allowBuilds:
+  # Vite/测试链路需要真实的 esbuild 二进制
+  esbuild: true
+  # pdfjs-dist 的可选依赖，只在 Node 侧做服务端渲染时才有用；
+  # 本应用在浏览器里渲染 PDF，禁止引入原生 canvas 编译链。
+  canvas: false

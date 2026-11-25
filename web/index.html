@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Knowledge Navigator</title>
+    <script>
+      // 首屏防闪烁：在 CSS 生效前就把持久化主题写到 <html data-theme>
+      try {
+        var raw = localStorage.getItem('akn.ui')
+        if (raw) {
+          var saved = JSON.parse(raw)
+          var theme = saved && saved.state && saved.state.theme
+          document.documentElement.dataset.theme = theme === 'night' ? 'night' : 'parchment'
+        }
+      } catch (error) {
+        /* 读不到就用默认羊皮卷 */
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>AI Knowledge Navigator 使用手册</title>
+<style>
+  @page {
+    size: A4;
+    margin: 17mm 16mm 16mm 16mm;
+  }
+
+  :root {
+    --ink: #1f2430;
+    --muted: #5b6474;
+    --line: #d8dce6;
+    --accent: #2f5fd0;
+    --accent-soft: #eef2fc;
+    --warn: #b45309;
+    --warn-soft: #fdf4e3;
+    --ok: #166534;
+    --ok-soft: #eefaf0;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    color: var(--ink);
+    font-family: 'Noto Serif CJK SC', 'Source Han Serif SC', 'Songti SC', serif;
+    font-size: 10.4pt;
+    line-height: 1.72;
+  }
+
+  /* ---------- 封面 ---------- */
+  .cover {
+    height: 252mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    page-break-after: always;
+  }
+  .cover .kicker {
+    font-family: 'Noto Sans CJK SC', 'PingFang SC', sans-serif;
+    font-size: 9pt;
+    letter-spacing: 0.28em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .cover h1 {
+    font-family: 'Noto Sans CJK SC', 'PingFang SC', sans-serif;
+    font-size: 30pt;
+    line-height: 1.25;
+    margin: 10mm 0 4mm;
+    border: none;
+    padding: 0;
+    page-break-before: avoid;
+  }
+  .cover .sub {
+    font-size: 13pt;
+    color: var(--muted);
+    margin-bottom: 12mm;
+  }
+  .cover .meta {
+    font-size: 9.5pt;
+    color: var(--muted);
+    border-top: 1px solid var(--line);
+    padding-top: 4mm;
+    width: 70%;
+  }
+  .cover .rule {
+    width: 46mm;
+    height: 3px;
+    background: var(--accent);
+    margin: 6mm 0;
+  }
+
+  /* ---------- 标题 ---------- */
+  h1 {
+    font-family: 'Noto Sans CJK SC', 'PingFang SC', sans-serif;
+    font-size: 18pt;
+    margin: 0 0 5mm;
+    padding-bottom: 2.5mm;
+    border-bottom: 2px solid var(--accent);
+    page-break-before: always;
+    break-before: page;
+  }
+  h2 {
+    font-family: 'Noto Sans CJK SC', 'PingFang SC', sans-serif;
+    font-size: 12.5pt;
+    margin: 6mm 0 2.5mm;
+    color: #23304a;
+  }
+  h3 {
+    font-family: 'Noto Sans CJK SC', 'PingFang SC', sans-serif;
+    font-size: 10.8pt;
+    margin: 4mm 0 1.5mm;
+    color: #2b3852;
+  }
+  p { margin: 0 0 2.4mm; }
+
+  ul, ol { margin: 0 0 3mm; padding-left: 6mm; }
+  li { margin-bottom: 1.2mm; }
+
+  code {
+    font-family: 'Noto Sans Mono CJK SC', 'DejaVu Sans Mono', monospace;
+    font-size: 8.9pt;
+    background: #f2f4f9;
+    border: 1px solid #e2e6ef;
+    border-radius: 3px;
+    padding: 0 2px;
+  }
+  pre {
+    font-family: 'Noto Sans Mono CJK SC', 'DejaVu Sans Mono', monospace;
+    font-size: 8.8pt;
+    line-height: 1.55;
+    background: #f6f8fc;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 3mm 3.5mm;
+    margin: 0 0 3mm;
+    white-space: pre-wrap;
+    page-break-inside: avoid;
+  }
+  pre code { background: none; border: none; padding: 0; font-size: inherit; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.2pt;
+    margin: 0 0 4mm;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1px solid var(--line);
+    padding: 1.6mm 2mm;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: #f2f5fb;
+    font-family: 'Noto Sans CJK SC', 'PingFang SC', sans-serif;
+    font-weight: 600;
+  }
+
+  .lead {
+    font-size: 11pt;
+    color: #333c4d;
+    background: var(--accent-soft);
+    border-radius: 4px;
+    padding: 3mm 4mm;
+    margin-bottom: 5mm;
+  }
+
+  .note, .warn, .ok {
+    border-radius: 4px;
+    padding: 2.6mm 3.5mm;
+    margin: 0 0 3.5mm;
+    font-size: 9.4pt;
+    page-break-inside: avoid;
+  }
+  .note { background: #f3f6fc; border-left: 3px solid var(--accent); }
+  .warn { background: var(--warn-soft); border-left: 3px solid var(--warn); }
+  .ok { background: var(--ok-soft); border-left: 3px solid var(--ok); }
+  .note b, .warn b, .ok b { font-family: 'Noto Sans CJK SC', 'PingFang SC', sans-serif; }
+
+  figure {
+    margin: 3mm 0 4mm;
+    page-break-inside: avoid;
+  }
+  figcaption {
+    font-size: 8.8pt;
+    color: var(--muted);
+    margin-top: 1.5mm;
+  }
+  .diagram {
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: #fbfcfe;
+    padding: 3mm;
+    font-family: 'Noto Sans Mono CJK SC', 'DejaVu Sans Mono', monospace;
+    font-size: 8.2pt;
+    line-height: 1.45;
+    white-space: pre;
+    overflow: hidden;
+  }
+
+  .toc {
+    font-family: 'Noto Sans CJK SC', 'PingFang SC', sans-serif;
+    font-size: 10.5pt;
+    line-height: 2.1;
+    list-style: none;
+    padding-left: 0;
+  }
+  .toc li { border-bottom: 1px dotted var(--line); }
+  .toc .num { color: var(--accent); display: inline-block; width: 12mm; }
+
+  .kv { color: var(--muted); }
+  .tag {
+    display: inline-block;
+    font-family: 'Noto Sans CJK SC', sans-serif;
+    font-size: 8pt;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0 2mm;
+    color: var(--muted);
+  }
+  .small { font-size: 9pt; color: var(--muted); }
+
+  .chapter-kicker {
+    display: block;
+    font-family: 'Noto Sans CJK SC', 'PingFang SC', sans-serif;
+    font-size: 7.8pt;
+    letter-spacing: 0.32em;
+    color: var(--accent);
+    margin-bottom: 1.6mm;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ 封面 ============ -->
+<section class="cover">
+  <p class="kicker">User Manual · v1.1</p>
+  <h1>AI Knowledge Navigator<br />使用手册</h1>
+  <div class="rule"></div>
+  <p class="sub">从 PDF 到知识图谱，跟着图谱学，边读边标注。</p>
+  <p class="meta">
+    适用版本：P0（Step 0–5）+ v1.1 图谱优先学习流<br />
+    运行形态：本地优先 Web 应用（数据存浏览器 IndexedDB）<br />
+    文档生成：2026-11-20 · 本 PDF 自身即可用本软件打开阅读
+  </p>
+</section>
+
+<!-- ============ 目录 ============ -->
+<h1><span class="chapter-kicker">CONTENTS</span>目录</h1>
+<p class="small">
+  阅读器左侧的「文档目录」来自本 PDF 的书签，点击即可跳章。下面也列一份，方便你了解结构。
+</p>
+<ul class="toc">
+  <li><span class="num">1</span>这是什么</li>
+  <li><span class="num">2</span>安装与运行</li>
+  <li><span class="num">3</span>界面导览</li>
+  <li><span class="num">4</span>第一次学习：五步走</li>
+  <li><span class="num">5</span>学习对话框详解</li>
+  <li><span class="num">6</span>PDF 阅读器</li>
+  <li><span class="num">7</span>AI 伴读</li>
+  <li><span class="num">8</span>笔记与 Markdown 导出</li>
+  <li><span class="num">9</span>数据、密钥与隐私</li>
+  <li><span class="num">10</span>常见问题</li>
+  <li><span class="num">A</span>附录 A：验收与自检命令</li>
+  <li><span class="num">B</span>附录 B：术语表</li>
+</ul>
+
+<!-- ============ 1 ============ -->
+<h1><span class="chapter-kicker">CHAPTER 01</span>1 这是什么</h1>
+<p class="lead">
+  AI Knowledge Navigator 把「硬核 PDF」变成可点击的知识图谱：先看结构，再点开知识点读它的说明
+  （是什么、先修什么、为什么重要、怎么自测）；要核对细节时一键跳回 PDF 原文。你不必从第一页读到最后一页。
+</p>
+
+<h2>1.1 它替你解决的三个问题</h2>
+<table>
+  <tr><th style="width:28%">问题</th><th>这个软件怎么做</th></tr>
+  <tr>
+    <td>论文太长，不知道先读哪</td>
+    <td>用 AI 抽出跨章节的核心概念，<b>从左到右按依赖方向</b>排列成脑图；节点是<b>椭圆</b>（宽 = 高 × 2.2，两行内截断，文字不出框），<b>大小 = 关联程度</b>（连边越多越大，与字数无关），<b>颜色深浅 = 掌握难度</b>（越深越难），红 = 未掌握、绿 = 已掌握（点节点内圆点切换）。有向边标出「依赖/触发/属于」等关系。</td>
+  </tr>
+  <tr>
+    <td>概念看不懂，来回翻 PDF</td>
+    <td>点知识点弹出学习对话框：先用一段<b>知识点描述</b>讲清这个概念是什么，再给<b>先修</b>、<b>精细加工</b>（类比 / 对比 / 常见误解）与<b>自测题</b>；有图表时附 caption 与区域截图；要核对原文一键跳回 PDF 位置。</td>
+  </tr>
+  <tr>
+    <td>想法记不住，笔记和原文脱节</td>
+    <td>在 PDF 原文上划选就能标注，标注与图谱知识点是**同一条记录**；AI 回答可带引注发送到笔记，最终一键导出 Markdown。</td>
+  </tr>
+</table>
+
+<h2>1.2 它不做什么</h2>
+<ul>
+  <li>不把 PDF 上传到云端。文件、图谱、标注全部存在本机浏览器 IndexedDB。</li>
+  <li>不假装知道。没有 API Key 时，AI 功能会用本地 Mock 上游跑通链路并明确标注「Mock 上游」，不冒充真实模型结论。</li>
+  <li>不编造页码。AI 给的引注会回原文核对，核对不上就显示「无直接出处」。</li>
+</ul>
+
+<!-- ============ 2 ============ -->
+<h1><span class="chapter-kicker">CHAPTER 02</span>2 安装与运行</h1>
+
+<h2>2.1 你需要什么</h2>
+<table>
+  <tr><th style="width:30%">项目</th><th>要求</th></tr>
+  <tr><td>Node.js</td><td>≥ 20 LTS（本项目在 v24 上验证）</td></tr>
+  <tr><td>pnpm</td><td>本仓库使用 pnpm workspace</td></tr>
+  <tr><td>浏览器</td><td>Chrome / Edge 等现代浏览器（需要 IndexedDB 与 module worker）</td></tr>
+  <tr><td>DeepSeek API Key</td><td><b>可选</b>。不填也能用 Mock 模式体验全流程</td></tr>
+</table>
+
+<h2>2.2 两种运行模式</h2>
+<h3>模式 A：零配置（Mock 上游）—— 推荐第一次使用</h3>
+<pre><code>cd ai-knowledge-navigator
+pnpm install            # 首次需要；已装过可跳过
+LLM_MOCK=1 pnpm dev     # 同时启动前端(5173)与代理(8787)</code></pre>
+<p>浏览器打开 <code>http://localhost:5173</code>。界面右上角会显示 <b>Mock 上游</b> 角标，表示 AI 结果是本地模拟的，用于跑通流程。</p>
+
+<h3>模式 B：真实 AI</h3>
+<pre><code>cp .env.example server/.env.local      # 填入 DEEPSEEK_API_KEY
+pnpm dev                               # 不加 LLM_MOCK</code></pre>
+<div class="note">
+  <b>密钥边界：</b>API Key 只存在于 <code>server/.env.local</code>（已在 .gitignore 中），
+  前端代码、浏览器存储与构建产物里都不会出现；所有 LLM 请求走同源 <code>/api/llm/*</code> 代理。
+</div>
+
+<h2>2.3 端口与脚本</h2>
+<table>
+  <tr><th style="width:36%">命令</th><th>作用</th></tr>
+  <tr><td><code>pnpm dev</code></td><td>并行启动前端 5173 与 Hono 代理 8787</td></tr>
+  <tr><td><code>pnpm -r typecheck</code></td><td>全量 TypeScript 类型检查</td></tr>
+  <tr><td><code>pnpm -r test</code></td><td>单元测试（118 个用例）</td></tr>
+  <tr><td><code>pnpm -r build</code></td><td>生产构建</td></tr>
+  <tr><td><code>node scripts/step6-learning-dialog.mjs</code></td><td>学习对话框全链路验收（需先 <code>LLM_MOCK=1 pnpm dev</code>）</td></tr>
+</table>
+
+<!-- ============ 3 ============ -->
+<h1><span class="chapter-kicker">CHAPTER 03</span>3 界面导览</h1>
+<figure>
+  <div class="diagram">┌──────────────────────────────────────────────────────────────────────────┐
+│ AI Knowledge Navigator   [打开 PDF] [重置栏宽]   左 260 · 右 380  ● 代理正常 │
+├──────────────┬───────────────────────────────────────────┬───────────────┤
+│ 文档目录      │  [知识图谱] [PDF 阅读]                     │ [AI 伴读][笔记]│
+│              │                                           │               │
+│ 1 Introduction│        ● Transformer                      │  context chip │
+│ 2 Background  │         ╲  依赖                           │  ┌──────────┐ │
+│ 3 Model Archi │          ● Multi-Head Attention           │  │ 对话消息  │ │
+│   3.1 Encoder │           ╲ 触发                          │  └──────────┘ │
+│   3.2 Attention│            ● Positional Encoding          │  [输入框]     │
+├──────────────┴───────────────────────────────────────────┴───────────────┤
+│ 底部：三栏宽度可拖拽（6px 分隔条），键盘 ←/→ 可微调，最小宽度有保护         │
+└──────────────────────────────────────────────────────────────────────────┘</div>
+  <figcaption>Figure 1: 主界面三栏布局示意（左：文档目录；中：知识图谱/PDF 阅读；右：AI 伴读/笔记）</figcaption>
+</figure>
+
+<h2>3.1 三栏各管什么</h2>
+<ul>
+  <li><b>左栏 · 文档目录</b>：来自 PDF 自身的书签（outline），只用于<b>跳页与圈定章节范围</b>；每条目录带<b>层级编号</b>（1 / 1.1 / 3.1.1），一级条目标「章」并加粗；书签标题本身已带编号时不会重复显示；章节很多时目录区可独立滚动（不会把页面撑开）。目录条目<b>不是知识点</b>：图谱里既不会出现「章节节点」，也不会把它当成关联端点（否则它会和所有知识点都连上，把真正的语义关系稀释掉）。图谱切到「章节模式」后可以对该章节做 <b>🚀 AI 开启拆解</b>。PDF 没有书签时显示明确空态，不伪造目录。</li>
+  <li><b>中栏 · 知识图谱（默认）/ PDF 阅读</b>：默认进图谱。PDF 阅读器不会卸载，切 Tab 不重新解析、不丢滚动位置。</li>
+  <li><b>右栏 · AI 伴读 / 笔记</b>：两个 Tab 切换，宽度与中栏共享同一列拖拽规则。</li>
+</ul>
+
+<h2>3.2 顶栏</h2>
+<ul>
+  <li><b>打开 PDF</b>：选择本地文件，解析后入 IndexedDB（不会上传）。</li>
+  <li><b>重置栏宽</b>：三栏宽度恢复默认（左 260 / 右 380）。</li>
+  <li><b>代理状态点</b>：绿=后端代理正常，红=后端未启动；悬停可看服务版本与是否配置了 Key。</li>
+  <li><b>左/右宽度读数</b>：仅开发模式显示，方便调布局。</li>
+</ul>
+
+<!-- ============ 4 ============ -->
+<h1><span class="chapter-kicker">CHAPTER 04</span>4 第一次学习：五步走</h1>
+
+<h2>第 1 步：打开一份 PDF</h2>
+<p>点顶栏 <b>打开 PDF</b>，选文件。左栏会立刻出现 PDF 的书签目录（如果这份 PDF 有书签）。</p>
+<div class="note">
+  本手册自身就是一份 PDF，你可以用它练习：点 <b>打开 PDF</b> 选中本文件，
+  左栏会出现 1–10 章与附录的书签。
+</div>
+
+<h2>第 2 步：让 AI 抽取图谱</h2>
+<p>中栏切到 <b>知识图谱</b>，点右上角 <b>⛏ AI 抽取全局图谱</b>。流程是：切块 → 逐块抽取 → 实体合并 → **先搭总纲再挂细节**（汇总阶段只读每个知识点的摘要与候选关系，先识别 3–8 个总纲概念，其余按<b>语义</b>归属挂上去）。<b>目录只用来切块与定位，不参与图的结构划分</b>。所有中间结果按块缓存，重复抽取不会重复计费。</p>
+
+<p>图谱分成两组，用顶部的 <b>① 全文档总览 / ② 章节拆解</b> 切换。每个知识点还带一个 <b>认知层级</b>（L1 定位 / L2 连接 / L3 推断 / L4 组织 / L5 选择），展开「学习路径」会按「先学简单的、再学依赖它的」排好序。点路径里的条目<b>只在图谱里高亮</b>对应节点（其余节点与连线变暗），并把它<b>平滑移到画布中心</b>；不会弹出详情，想看详情请点图谱里的节点本身。</p>
+<ul>
+  <li><b>① 全文档总览</b>：全文档核心知识点，从左到右按依赖排布（左边是前置知识，右边建立在它之上），带箭头指向（3px 粗线 + 大箭头）；同一层节点多时会自动折成多列，不会堆成一根竖线。<b>大小</b>代表关联程度（连接的边越多越大，说明涉及面越广）；<b>颜色深浅</b>代表掌握难度（越深越难）；<b>红/绿</b>代表未掌握/已掌握。点节点内的圆点即可在红↔绿之间切换，尺寸与深浅不变。点任意节点后，<b>不相关的节点与连线会一起变暗</b>，只留下它的直接上下游。</li>
+  <li><b>② 章节拆解</b>：选中某一章后点 <b>🚀 AI 开启拆解</b>，得到更细的子图；每个节点直接锚定到原文核心点，点开就是该知识点的描述与「跳到 PDF 原文」。上方还有「章节速览」入口，点开是**可拖动、可关闭的浮窗**（不会挤压图谱）：它把这一章<b>逐段总结</b>（一个知识点一段，只讲内容、不给学习顺序建议）；正文里的知识点名称是<b>可点关键词</b>，点击即选中下方图谱里对应的节点（联动高亮，并自动移到画布中心）。学习路径清单在速览下方。</li>
+</ul>
+<div class="warn">
+  <b>没有配置 Key？</b> 若看到「服务端未配置 DEEPSEEK_API_KEY（503）」：要么按 2.2 配置 Key，
+  要么用 <code>LLM_MOCK=1 pnpm dev</code> 启动以 Mock 上游体验流程。
+</div>
+
+<h2>第 3 步：点开一个知识点</h2>
+<p>点图谱里任意椭圆 → 弹出 <b>学习对话框</b>：标题与掌握状态、<b>知识点描述</b>（一段话讲清它是什么）、<b>先修</b>（学它之前必须先掌握什么）、<b>精细加工</b>（类比 / 对比 / 为什么重要 / 常见误解）、<b>自测</b>（先自己想，再展开答案要点），以及笔记与上下游。</p>
+<p>对话框读的是「这个概念是什么」，不再堆两百字上下文。如果某个知识点还没有描述，对话框会显示 <b>点击进一步分析</b>：按需调一次模型补上描述、原文锚点、精细加工与自测题（不会重新生成整张图）。</p>
+
+<h2>第 4 步：跳回原文核对与标注</h2>
+<p>点对话框底部的 <b>跳到 PDF 原文</b>：切到 PDF Tab、滚到锚点页，并在原文句子下方画一条闪烁的黄色下划线（匹配不到时退化为整页闪一下并提示，不假装命中）。</p>
+<p>在 PDF 正文里划选任意一句 → 弹出气泡 → 写批注（可留空）→ 保存。这条标注会：</p>
+<ol>
+  <li>写入本机 IndexedDB；</li>
+  <li>立刻在 PDF 同一位置显示为黄色高亮；</li>
+  <li>之后再从图谱打开该知识点，仍能一键跳回同一处原文。</li>
+</ol>
+
+<h2>第 5 步：继续往下学</h2>
+<p>对话框右下「前置依赖 / 后置影响」里的条目可以直接点，对话框会原地切换成相邻知识点——学习是顺着图谱走的，不用回 PDF 翻页。</p>
+
+<!-- ============ 5 ============ -->
+<h1><span class="chapter-kicker">CHAPTER 05</span>5 学习对话框详解</h1>
+
+<h2>5.1 对话框里有什么</h2>
+<table>
+  <tr><th style="width:30%">区域</th><th>说明</th></tr>
+  <tr><td>标题与元信息</td><td>知识点标题、认知层级、单元类型、重要度、掌握状态、来源与锚点页码。</td></tr>
+  <tr><td>知识点描述</td><td>一段话讲清「它是什么、解决什么问题」（抽取给的 summary；按需分析后更完整），下方标出别名。</td></tr>
+  <tr><td>先修 / 精细加工 / 自测</td><td>学它之前应先掌握的概念；类比、对比、为什么重要、常见误解；一道可展开答案的自测题。</td></tr>
+  <tr><td>图表</td><td>该知识点附近出现 <code>Figure N:</code> / <code>Table N:</code> 之类 caption 时，附 caption 与<b>按 caption 估算区域</b>渲染出的 PNG，并可直接「在 PDF 查看」。<b>图表/表格知识点</b>即使模型只给了 caption、没给逐字引文，也能跳原文：按 caption 在该页定位并画下划线，定位不到就落到图表页并整页闪一下。</td></tr>
+  <tr><td>知识点笔记</td><td>不需要划选，直接写下你对这个知识点的理解；存入独立的 notes 表。</td></tr>
+  <tr><td>继续学</td><td>前置依赖 / 后置影响条目，点击原地切换知识点。</td></tr>
+  <tr><td>跳转</td><td>底部「跳到 PDF 原文」：切到 PDF Tab、滚到锚点页、并临时高亮原文（约 2.6 秒）。</td></tr>
+</table>
+
+<h2>5.2 知识点描述从哪来</h2>
+<p>
+  描述来自抽取阶段每个知识点的 summary（≤ 40 字，模型读原文写的）；点 <b>点击进一步分析</b> 会让模型读该知识点附近的原文，
+  重写一条更完整的描述（≤ 120 字），并补上先修、精细加工与自测题。图表占位节点没有摘要时，描述回落到图表的 caption。
+  描述的语言跟随右上角「输出语言」设置；引用的原文始终保留原样，不做翻译。
+</p>
+<div class="ok">
+  <b>验证方法：</b>打开一个只有标题的空节点 → 显示「点击进一步分析」→ 点一下 → 描述、先修与自测出现，图谱结构不变。
+</div>
+
+<h2>5.3 已知限制</h2>
+<ul>
+  <li>对话框<b>不再展示原文摘抄</b>（前后各 200 字的上下文）：要在原文里读细节，请点「跳到 PDF 原文」。</li>
+  <li>描述长度有限：抽取阶段 ≤ 40 字，按需分析 ≤ 120 字；更细的内容用 AI 伴读或直接读原文。</li>
+  <li>图表区域是<b>按 caption 估算</b>的（向上扩 35% 页高），复杂双栏排版可能框多或框少。</li>
+  <li>划选标注在 PDF 侧完成（见 6.2）；知识点没有可定位的逐字引文时只能按页跳转，界面会写明「没有可定位的原文锚点」。</li>
+</ul>
+
+<!-- ============ 6 ============ -->
+<h1><span class="chapter-kicker">CHAPTER 06</span>6 PDF 阅读器</h1>
+
+<h2>6.1 目录与跳页</h2>
+<p>左栏目录来自 PDF 书签，支持多级层级；点击条目会滚动到对应页并同步页码指示器。没有书签的 PDF 会显示空态（章节结构留给 AI 抽取补足）。</p>
+
+<h2>6.2 章节掌握度与书签</h2>
+<p>目录每行左侧的小圆点表示<b>这一章掌握到哪了</b>（统计依据：该章页码范围内的知识点，按标题去重；① 总览与 ② 章节拆解里勾过的都算）：</p>
+<ul>
+  <li><b>实心绿圈</b>：本章知识点<b>全部已掌握</b>；圆点与整行悬停都会提示「本章已全部掌握（m/n）」。</li>
+  <li><b>半绿圈</b>：掌握了一部分；悬停提示「已掌握 m/n」。</li>
+  <li><b>灰色空心圈</b>：还没开始，或一个都没掌握（本章没有知识点时也显示为空心）。</li>
+</ul>
+<p>左栏底部有这三种状态的图例与「已掌握 m/n」总计。子章节会把自己和下级章节一起算，父章节的圆圈 = 整棵子树。</p>
+<p><b>章节书签</b>：点行尾的<b>绸带书签图标</b>（上边平、下边剪掉一个三角缺口）给这一章加书签，加好后变实心，再点一次取消。下次打开这份文档（含刷新页面自动恢复）会<b>直接跳到最近钉住的那一章</b>：中栏切到 PDF 并滚到该章首页，左栏顶部出现「已跳到书签：…（第 N 页）」提示，可点 × 关闭。书签存在本机 IndexedDB，换设备不会同步。</p>
+<div class="note">
+  同一份 PDF 如果重新「打开 PDF」再选一次，会被当成一份新文档（现有行为），书签与掌握状态不会跟过去；
+  正常用法是关掉页面再打开，软件会自动恢复上次的文档。
+</div>
+
+<h2>6.3 高亮与备注</h2>
+<ol>
+  <li>在 PDF 正文里用鼠标划选文字 → 弹出气泡 → 选择表情、写备注（可留空）→ 保存。</li>
+  <li>点击已有高亮 → 弹出编辑气泡：可改备注、改表情、删除。</li>
+  <li>气泡里还会显示「关联图谱节点」：若这段原文能匹配到某个知识点，给出「定位」按钮，一键跳到图谱并打开该知识点；匹配不到则明确提示未关联。</li>
+</ol>
+
+<h2>6.4 双向联动</h2>
+<table>
+  <tr><th style="width:34%">从哪到哪</th><th>效果</th></tr>
+  <tr><td>图谱节点 → PDF</td><td>「跳到 PDF 原文」：切 Tab、滚到锚点页，并在**原文句子下方画一条闪烁的黄色下划线**（跨多行就每行一条）；匹配不到时才退化为「整页闪一下」并提示「已标出该页」，不会假装命中。</td></tr>
+  <tr><td>图表/表格节点 → PDF</td><td>同样的「跳到 PDF 原文」，但目标是 caption：能逐字命中就在 caption 下画闪烁下划线，命中不到就退化为「整页闪一下」并提示「已标出该页」。</td></tr>
+  <tr><td>PDF 高亮 → 图谱</td><td>点高亮气泡里的「定位」：切到图谱并打开该知识点的学习对话框。</td></tr>
+  <tr><td>PDF 选区 → 提问</td><td>选中文字后，右栏输入框上方出现可删除的 context chip。</td></tr>
+</table>
+
+<!-- ============ 7 ============ -->
+<h1><span class="chapter-kicker">CHAPTER 07</span>7 AI 伴读</h1>
+
+<h2>7.1 提问与上下文</h2>
+<p>右栏 <b>AI 伴读</b> Tab 里提问。两种方式会自动注入上下文：</p>
+<ul>
+  <li>在 PDF 里选中文本 → 生成「选中原文」chip；</li>
+  <li>在图谱里点节点 → 生成「图谱节点」chip。</li>
+</ul>
+<p>chip 可以随时点 × 删除；发送后会随问题一起带给模型，发完自动清空。</p>
+
+<h2>7.2 引注：为什么不担心编造页码</h2>
+<p>回答会带形如 <code>[引用] 第6页：「原文片段」</code> 的引注。软件不会直接相信这些引注，而是拿回 PDF 文本层逐条核对：</p>
+<table>
+  <tr><th style="width:26%">核对结果</th><th>界面表现</th></tr>
+  <tr><td>原文能对上</td><td>绿色条目：第 N 页 +「原文」，其中页码用的是<b>真实命中页</b>（模型写错也会被纠正）。</td></tr>
+  <tr><td>对不上</td><td>黄色条目：<b>无直接出处</b>，另附一行灰色的「模型声称：…」，页码不显示。</td></tr>
+  <tr><td>模型没给引注</td><td>仍生成一条「无直接出处」条目，不会出现空白。</td></tr>
+</table>
+<p>每条回答下方有 <b>发送到总结笔记</b>，会把这条回答（含引注）送进笔记面板待插入队列。</p>
+
+<!-- ============ 8 ============ -->
+<h1><span class="chapter-kicker">CHAPTER 08</span>8 笔记与 Markdown 导出</h1>
+
+<h2>8.1 四类可插入内容</h2>
+<table>
+  <tr><th style="width:26%">按钮</th><th>来源</th></tr>
+  <tr><td>节点卡片</td><td>当前在图谱里选中的知识点（标题 + 难度 + 掌握状态）。</td></tr>
+  <tr><td>原文高亮</td><td>最近一条 PDF 高亮（原文 + 页码）。</td></tr>
+  <tr><td>AI 回答</td><td>点了「发送到总结笔记」的回答，按钮上会显示待插入数量。</td></tr>
+  <tr><td>图谱截图</td><td>当前知识图谱视图的 PNG（需先切到图谱视图）。</td></tr>
+</table>
+
+<h2>8.2 导出 Markdown（P0）</h2>
+<p>点 <b>导出 .md</b>：先展示<b>真实序列化结果</b>的预览，再点「下载 .md」。降级规则是固定的：</p>
+<table>
+  <tr><th style="width:30%">笔记内容</th><th>导出形态</th></tr>
+  <tr><td>普通段落 / 标题 / 列表 / 代码块</td><td>标准 Markdown</td></tr>
+  <tr><td>节点卡片</td><td><code>&gt; **【节点】标题**</code> + 重要度星级与掌握状态</td></tr>
+  <tr><td>原文高亮</td><td>引用块 + <code>— p.页码</code></td></tr>
+  <tr><td>AI 回答</td><td>引用块 + <code>出处：p.N「原文」</code> 或 <code>出处：无直接出处</code></td></tr>
+  <tr><td>截图</td><td>默认内联 base64；单图 &gt; 1.5MB 或全篇 &gt; 8MB 时降级为 <code>akn-assets/image-N.png</code> 占位并在文首提示</td></tr>
+</table>
+
+<h2>8.3 同步（P1，仅占位）</h2>
+<p>Obsidian / Notion / 飞书三个目标目前只有接口与配置校验，点了会明确返回「P1 未实现」，不会发真实请求。</p>
+
+<!-- ============ 9 ============ -->
+<h1><span class="chapter-kicker">CHAPTER 09</span>9 数据、密钥与隐私</h1>
+
+<h2>9.1 数据存在哪</h2>
+<table>
+  <tr><th style="width:30%">内容</th><th>位置</th></tr>
+  <tr><td>PDF 原文件、目录、高亮、图谱、笔记、抽取缓存</td><td>浏览器 IndexedDB（库名 <code>ai-knowledge-navigator</code>）</td></tr>
+  <tr><td>界面偏好（Tab、栏宽、导出选项）</td><td>localStorage（键 <code>akn.ui</code>）</td></tr>
+  <tr><td>API Key</td><td>仅 <code>server/.env.local</code>，不进浏览器</td></tr>
+</table>
+
+<h2>9.2 怎么清空</h2>
+<p>浏览器开发者工具 → Application → Storage → Clear site data，或换一个浏览器配置文件。清空后刷新页面即可重新开始。</p>
+
+<div class="warn">
+  <b>换浏览器 = 换数据。</b>IndexedDB 与 localStorage 都是按「浏览器 + 站点」隔离的，
+  在 A 浏览器里的标注不会出现在 B 浏览器里。需要迁移请用笔记导出 Markdown。
+</div>
+
+<!-- ============ 10 ============ -->
+<h1><span class="chapter-kicker">CHAPTER 10</span>10 常见问题</h1>
+
+<h3>Q1：没有 API Key 能用到什么程度？</h3>
+<p>除了「AI 抽取图谱 / 章节拆解 / 伴读提问」这三处需要上游，其余全部可用：打开 PDF、目录跳页、划选高亮与备注、图谱渲染与交互、缓存、笔记、Markdown 导出。用 <code>LLM_MOCK=1 pnpm dev</code> 时这三处也能跑，但结果标注为 Mock。</p>
+
+<h3>Q2：点「AI 抽取全局图谱」报 503？</h3>
+<p>服务端没有检测到 <code>DEEPSEEK_API_KEY</code>。两种解法：配置 Key 后普通 <code>pnpm dev</code>；或改用 Mock 模式启动。</p>
+
+<h3>Q3：抽取失败了怎么办？</h3>
+<p>看图谱上方的红色错误条。常见原因：模型输出不是合法 JSON（软件会自动做一次「只修格式」的重试，仍失败则该块标记 failed）、网络超时、Key 无效。失败不会产生假节点，重试即可。</p>
+
+<h3>Q4：重复点抽取会不会重复花钱？</h3>
+<p>不会。每个块的结果按「文档 + 块哈希 + prompt 版本」缓存，重复抽取直接读缓存；改 prompt 版本才会失效。</p>
+
+<h3>Q5：图表摘抄里的图片黑掉/框错位置？</h3>
+<p>图表区域是按 caption 位置估算的（上扩 35% 页高），没有做图形语义识别。位置不准时可以点「在 PDF 查看」看原页。</p>
+
+<h3>Q6：对话框里不能删标注？</h3>
+<p>当前版本请到 PDF 侧点击该高亮的气泡删除。这是已知限制，下一步会补对话框内的编辑/删除。</p>
+
+<h3>Q7：为什么我的 PDF 目录是空的？</h3>
+<p>这份 PDF 本身没有书签。软件不做伪造目录；章节结构可以在抽取图谱后由 AI 补足。</p>
+
+<h3>Q8：三栏挤在一起了？</h3>
+<p>点顶栏「重置栏宽」；或拖拽分隔条重新分配。窗口很窄时中间阅读区有 360px 最小宽度保护。</p>
+
+<!-- ============ 附录 A ============ -->
+<h1><span class="chapter-kicker">APPENDIX A</span>附录 A：验收与自检命令</h1>
+<p>所有验收脚本都真实驱动无头 Chrome，用鼠标/键盘事件断言，不是「看截图猜」。</p>
+<table>
+  <tr><th style="width:42%">命令</th><th>覆盖</th></tr>
+  <tr><td><code>node scripts/ui-check.mjs</code></td><td>布局 / Tab / 拖拽 / 持久化（16 项）</td></tr>
+  <tr><td><code>node scripts/step2-check.mjs</code></td><td>上传 / 目录 / 高亮 / 刷新恢复（21 项）</td></tr>
+  <tr><td><code>LLM_MOCK=1 node scripts/step3-check.mjs</code></td><td>抽取 / 缓存 / zod / 图谱（20 项）</td></tr>
+  <tr><td><code>node scripts/step4-check.mjs</code></td><td>双向联动 / 伴读 / 引注（16 项）</td></tr>
+  <tr><td><code>node scripts/step5-check.mjs</code></td><td>笔记 / 截图 / 导出（16 项）</td></tr>
+  <tr><td><code>node scripts/step6-learning-dialog.mjs</code></td><td>学习对话框 / 知识点描述 / 图摘抄 / 跳原文（19 项，1 项按数据跳过）</td></tr>
+  <tr><td><code>node scripts/bookmark-progress-check.mjs</code></td><td>目录三态掌握圈 / 章节书签 / 刷新后自动跳书签（23 项）</td></tr>
+  <tr><td><code>node scripts/db-upgrade-check.mjs</code></td><td>IndexedDB v1 → v2 迁移（不删库、老数据还在，6 项）</td></tr>
+  <tr><td><code>node scripts/table-jump-check.mjs</code></td><td>图表/表格知识点跳原文（新抽取 + 旧数据兜底，14 项）</td></tr>
+</table>
+<div class="note">
+  前 5 个脚本需要先 <code>pnpm dev</code>（Step 3 建议 Mock 模式）；脚本会自己拉起无头浏览器并复用 5173/8787。
+</div>
+
+<!-- ============ 附录 B ============ -->
+<h1><span class="chapter-kicker">APPENDIX B</span>附录 B：术语表</h1>
+<table>
+  <tr><th style="width:26%">术语</th><th>含义</th></tr>
+  <tr><td>知识点（节点）</td><td>AI 从 PDF 抽出的一个概念，带重要度 1–5、掌握状态与原文锚点。</td></tr>
+  <tr><td>重要度</td><td>1=细节术语，5=全文级核心概念。决定节点大小与红/绿深浅。</td></tr>
+  <tr><td>掌握状态</td><td>未掌握=红系，已掌握=绿系；切换只换色系，不改尺寸。</td></tr>
+  <tr><td>锚点（anchor）</td><td>知识点对应的原文位置：页码 + 逐字引文 quote + 可选矩形。</td></tr>
+  <tr><td>知识点描述</td><td>用一段话讲清该知识点「是什么、解决什么问题」的文字（抽取的 summary，按需分析可加长）。</td></tr>
+  <tr><td>引注（citation）</td><td>AI 回答附带的出处，必须回原文核对；核对不上就是「无直接出处」。</td></tr>
+  <tr><td>块（chunk）</td><td>抽取时按章节对齐切出的文本单元，缓存以它为粒度。</td></tr>
+  <tr><td>Mock 上游</td><td>本地模拟的 LLM 服务，用于无 Key 时验证链路；界面会明确标注。</td></tr>
+</table>
+
+<div class="ok" style="margin-top:8mm">
+  <b>读完这份手册，你已经会用了。</b>剩下的是它替你做的那些琐事：抽概念、对齐原文、核对引注、把标注同时留在两处。
+  祝你读得慢一点、想得多一点。
+</div>
+
+</body>
+</html>

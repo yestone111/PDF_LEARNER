@@ -1,0 +1,30 @@
+{
+  "name": "akn",
+  "version": "0.1.0",
+  "description": "AI Knowledge Navigator —— 把 PDF 变成可点击知识图谱的 DSH 插件。模型复用 DSH 当前配置（ctx.llm），不额外配置 API Key。",
+  "keywords": ["deepseek", "harness", "dsh", "cordis", "plugin", "pdf", "knowledge-graph"],
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": ["lib", "static", "cordis.patch.yml", "README.md"],
+  "license": "MIT",
+  "dsh": {
+    "client": {
+      "inject": ["@deepseek-ai/dsh-client-runtime"],
+      "platform": "web"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": { "optional": true }
+  }
+}

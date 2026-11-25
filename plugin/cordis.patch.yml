@@ -1,0 +1,5 @@
+# akn bundle patch：注册一个双端插件（宿主半 + 浏览器半）。
+# 行 name 必须与 npm 包名、以及宿主半导出的 name 一致。
+- insert:
+    - id: akn
+      name: 'akn'
