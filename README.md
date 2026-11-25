@@ -43,6 +43,18 @@ pnpm plugin:install   # = dsh plugin --profile web add ./plugin
 按钮对齐关系：RTL_Cockpit `bottom:18px`、高 38px → 本按钮 `bottom:66px`，间距 10px；
 圆角 20px、内边距、字重、阴影、hover 位移与 RTLCockpit 完全一致，只换了图标/文案/渐变主色。
 
+插件在 DSH 插件页里的**标题 / 简介 / 图标**不是随便写的，走 DSH 的清单规则：
+
+| 展示项 | 来源 | 本仓库文件 |
+| --- | --- | --- |
+| 标题 | `locale/<lang>.json` 的 `meta.title` → 回退 `package.json.name` | `plugin/locale/{en,zh}.json` |
+| 简介 | 同上的 `meta.description` → 回退 `package.json.description` | 同上 |
+| 图标 | `package.json.icon`：包内相对路径，svg/png/jpeg/webp，≤256 KiB | `plugin/icon.svg` |
+| 兼容性 | `engines.dsh`（SemVer）与 `dsh --version` 比对 | `>=0.2.0-rc.2` |
+
+完整规则（含语言包解析顺序、patch 行 `name` 必须等于包名、`exports` 必须暴露 `./locale/*` 等坑）见
+**[docs/DSH-PLUGIN.md](docs/DSH-PLUGIN.md)**，并可用 `pnpm verify:plugin-manifest`（33 项）自检。
+
 ### 知识图谱：两组 + 三重视觉语义
 
 | 组 | 内容 | 入口 |
@@ -181,7 +193,8 @@ pnpm dev                # 同时拉起 Vite(5173) 与 Hono(8787)
 | `node scripts/step6-learning-dialog.mjs` | v1.2：学习对话框/知识点描述/图摘抄/跳原文（19 项 + 1 项按数据跳过，需 mock dev） |
 | `node scripts/manual-check.mjs` | 手册自检：把使用手册当 PDF 用一遍（目录/跳页/抽取/知识点描述/图摘抄，8–10 项） |
 | `pnpm build:plugin` | 以 `/akn/` 为基路径重新构建插件静态资源 |
-| `pnpm test:plugin` | DSH 插件自测（假 ctx + 真实 HTTP，21 项） |
+| `pnpm test:plugin` | DSH 插件自测（假 ctx + 真实 HTTP，25 项） |
+| `pnpm verify:plugin-manifest` | DSH 插件清单自检：标题/简介/图标/语言包/patch/engines/运行时解析/打包白名单（33 项） |
 | `node scripts/plugin-live-check.mjs` | 实境验收：在运行中的 DSH 里用真实模型抽取 |
 | `node scripts/plugin-ui-check.mjs` | 插件 UI 快检：底部状态栏 + 「返回 DSH」按钮（9 项） |
 | `node scripts/theme-check.mjs` | 主题验收：默认羊皮卷 / 切换 / 刷新保持 / 无闪烁（9 项） |

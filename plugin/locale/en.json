@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "AI Knowledge Navigator",
+    "description": "Turn hard PDFs into a clickable knowledge graph: chapters, mastery and annotations; runs as a DSH plugin and reads with your current DSH model — no extra API key."
+  }
+}

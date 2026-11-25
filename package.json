@@ -1,9 +1,9 @@
 {
   "name": "ai-knowledge-navigator",
-  "version": "0.1.0",
+  "version": "1.3.0",
   "private": true,
   "type": "module",
-  "description": "AI Knowledge Navigator —— 本地优先的 PDF 知识图谱阅读器",
+  "description": "AI Knowledge Navigator —— 以 DeepSeek Harness 插件形态运行的本地优先 PDF 知识图谱阅读器",
   "engines": {
     "node": ">=20"
   },
@@ -19,9 +19,28 @@
     "plugin:install": "dsh plugin --profile web add ./plugin",
     "plugin:uninstall": "dsh plugin --profile web remove akn",
     "verify:outline": "node scripts/outline-encoding-check.mjs",
-    "verify:language": "node scripts/language-check.mjs"
+    "verify:language": "node scripts/language-check.mjs",
+    "verify:plugin-manifest": "node scripts/plugin-manifest-check.mjs"
   },
   "devDependencies": {
     "concurrently": "^10.0.7"
-  }
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/yestone111/PDF_LEARNER#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yestone111/PDF_LEARNER.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yestone111/PDF_LEARNER/issues"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "pdf",
+    "knowledge-graph",
+    "local-first",
+    "react",
+    "vite"
+  ]
 }

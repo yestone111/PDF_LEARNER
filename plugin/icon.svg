@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="AI Knowledge Navigator">
+  <rect x="5" y="7" width="37" height="50" rx="5" fill="#fbf4e4" stroke="#834a20" stroke-width="3"/>
+  <path d="M14 18h19M14 26h19M14 34h19M14 42h12" stroke="#c7ab7d" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="46" cy="18" r="6.5" fill="#2f6b3a" stroke="#3b3025" stroke-width="2.5"/>
+  <circle cx="54" cy="38" r="6" fill="#834a20" stroke="#3b3025" stroke-width="2.5"/>
+  <circle cx="40" cy="52" r="5.5" fill="#b45309" stroke="#3b3025" stroke-width="2.5"/>
+  <path d="M40 51l11-11M50 24l3 8" stroke="#6f5f49" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

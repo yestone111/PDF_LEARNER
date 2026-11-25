@@ -6,6 +6,18 @@
 - 前端构建产物挂在 DSH Web 的同源路径 `/akn/`；
 - LLM 桥接在 `/api/akn/llm/*`，请求不出本机、Key 不进浏览器。
 
+## 插件页会显示什么（DSH 清单规则）
+
+| 展示项 | 来源 | 文件 |
+| --- | --- | --- |
+| 标题 | `locale/*.json` → `meta.title`（中文界面取 `zh`，英文取 `en`） | `locale/en.json`、`locale/zh.json` |
+| 简介 | `locale/*.json` → `meta.description`，缺省回退 `package.json.description` | 同上 |
+| 图标 | `package.json.icon`（相对路径、svg/png/jpeg/webp、≤256 KiB） | `icon.svg` |
+| 兼容性 | `engines.dsh`（`>=0.2.0-rc.2`） | `package.json` |
+
+语言包必须通过 `exports` 暴露（`"./locale/*": "./locale/*"`），否则运行时解析不到、静默回退成包名。
+完整规则与常见坑见仓库根 `docs/DSH-PLUGIN.md`，自检：`pnpm verify:plugin-manifest`。
+
 ## 安装
 
 ```bash
