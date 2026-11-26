@@ -10,7 +10,7 @@ import { HighlightTip } from '../../pdf/HighlightTip'
 import { toLibraryHighlight } from '../../pdf/highlightMapping'
 import { OpenPdfButton } from '../../pdf/OpenPdfButton'
 import { removeHighlight, saveHighlightComment, saveSelectionHighlight } from '../../pdf/pdfController'
-import { flashPageInView, flashQuoteInPage } from '../../pdf/flashQuote'
+import { flashPageInView, flashQuoteInPage, isSearchableQuote } from '../../pdf/flashQuote'
 
 import { findNodeByText } from '../../graph/quoteMatch'
 
@@ -73,8 +73,28 @@ export function PdfPane(): ReactElement {
 
   const viewerRef = useRef<HTMLDivElement | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  // 「跳转到原文」的短提示（引文太短/文本层缺失时的降级说明）。以前 setStatus 写进 error 字段，
+  // 但 PDF 已打开时那个占位组件根本不渲染 —— 用户完全看不到降级原因。
+  const [flashHint, setFlashHint] = useState<string | null>(null)
+  const flashHintTimer = useRef<number | null>(null)
 
   const libraryHighlights = useMemo(() => highlights.map(toLibraryHighlight), [highlights])
+
+  useEffect(
+    () => () => {
+      if (flashHintTimer.current !== null) window.clearTimeout(flashHintTimer.current)
+    },
+    [],
+  )
+
+  const showFlashHint = useCallback((message: string): void => {
+    if (flashHintTimer.current !== null) window.clearTimeout(flashHintTimer.current)
+    setFlashHint(message)
+    flashHintTimer.current = window.setTimeout(() => {
+      setFlashHint(null)
+      flashHintTimer.current = null
+    }, 5000)
+  }, [])
 
   /** 由滚动位置推断当前页（viewer 的页面容器带 data-page-number）。 */
   const trackVisiblePage = useCallback(() => {
@@ -144,6 +164,9 @@ export function PdfPane(): ReactElement {
     let scrolled = false
     let pageFlashed = false
 
+    // 引文本身太短（如两个字）时，不必等 30 次重试才降级：直接整页闪 + 说明原因
+    const searchable = isSearchableQuote(pendingFlash.quote)
+
     const tryFlash = (): void => {
       if (cancelled) return
       const container = viewerRef.current
@@ -152,33 +175,48 @@ export function PdfPane(): ReactElement {
 
       if (container === null || pageElement === null) {
         attempts += 1
-        if (attempts < 100) window.setTimeout(tryFlash, 100)
+        if (attempts < 100) {
+          window.setTimeout(tryFlash, 100)
+          return
+        }
+        // 目标页始终没渲染出来：至少给一条明确提示，不静默失败
+        showFlashHint(`没能定位到第 ${pendingFlash.page} 页，PDF 可能仍在加载`)
+        consumeFlashRequest()
         return
       }
 
       // 页面是懒渲染的：把它滚进视口才会生成文本层
       const spans = pageElement.querySelectorAll('.textLayer span').length
-      if (spans === 0) {
+      if (spans === 0 && searchable) {
         if (!scrolled) {
           scrollPageIntoViewer(container, pendingFlash.page)
           scrolled = true
         }
         attempts += 1
-        if (attempts < 100) window.setTimeout(tryFlash, 100)
+        if (attempts < 100) {
+          window.setTimeout(tryFlash, 100)
+          return
+        }
+        // 文本层始终没出来（扫描页 / 渲染失败）：兜底整页闪并说明原因
+        flashPageInView(container, pendingFlash.page)
+        showFlashHint(`第 ${pendingFlash.page} 页没有可选中文本（可能是扫描页），已标出该页`)
+        consumeFlashRequest()
         return
       }
 
       let matched = false
-      try {
-        matched = flashQuoteInPage(container, pendingFlash.page, pendingFlash.quote)
-      } catch {
-        matched = false
+      if (searchable) {
+        try {
+          matched = flashQuoteInPage(container, pendingFlash.page, pendingFlash.quote)
+        } catch {
+          matched = false
+        }
       }
 
       if (!matched) {
         // 目标页可能刚切过来还没完成布局（span 高度为 0，画不出框）：短暂重试，不急着降级
         attempts += 1
-        if (attempts < 30) {
+        if (searchable && attempts < 30) {
           if (!scrolled) {
             scrollPageIntoViewer(container, pendingFlash.page)
             scrolled = true
@@ -190,9 +228,11 @@ export function PdfPane(): ReactElement {
           // 兜底：匹配不到时才整页闪，并明确告知（不假装命中）
           flashPageInView(container, pendingFlash.page)
           pageFlashed = true
-          useDocumentStore
-            .getState()
-            .setStatus('ready', `已跳到第 ${pendingFlash.page} 页（这段引文未能逐字匹配，已标出该页）`)
+          showFlashHint(
+            searchable
+              ? `已跳到第 ${pendingFlash.page} 页（这段引文未能逐字匹配，已标出该页）`
+              : `引文「${pendingFlash.quote.slice(0, 12)}」太短，无法精确定位，已标出第 ${pendingFlash.page} 页`,
+          )
         }
       }
       consumeFlashRequest()
@@ -202,7 +242,7 @@ export function PdfPane(): ReactElement {
     return () => {
       cancelled = true
     }
-  }, [pendingFlash, consumeFlashRequest, centerTab])
+  }, [pendingFlash, consumeFlashRequest, centerTab, showFlashHint])
 
   // 选中原文 → 自动成为下一条提问的 context chip（可删除）
   useEffect(() => {
@@ -249,6 +289,15 @@ export function PdfPane(): ReactElement {
           {notice !== null ? (
             <span className="truncate rounded bg-akn-danger-soft px-1.5 py-0.5 text-[10px] text-akn-danger">
               {notice}
+            </span>
+          ) : null}
+          {flashHint !== null ? (
+            <span
+              data-testid="pdf-flash-hint"
+              className="max-w-[46ch] truncate rounded bg-akn-warn-soft px-1.5 py-0.5 text-[10px] text-akn-warn"
+              title={flashHint}
+            >
+              {flashHint}
             </span>
           ) : null}
         </div>

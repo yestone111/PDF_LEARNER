@@ -20,6 +20,27 @@ function normalize(text: string): string {
   return normalizeForFlash(text)
 }
 
+/** 中日韩字符（含假名/谚文）：一个字的信息量约等于两个拉丁字母。 */
+const CJK_PATTERN = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uac00-\ud7af]/
+
+/**
+ * 引文可搜索权重：CJK 按 2 计，其余按 1 计。
+ *
+ * 之前用 `quote.length < 6` 一刀切，会把「零拷贝卸载」这种 5 个汉字、区分度很高的术语
+ * 直接判成「太短不可定位」，于是点了跳转只整页闪、没有下划线（真实反馈）。
+ */
+export function quoteWeight(text: string): number {
+  let weight = 0
+  for (const char of normalizeForFlash(text)) weight += CJK_PATTERN.test(char) ? 2 : 1
+  return weight
+}
+
+export const MIN_QUOTE_WEIGHT = 6
+
+export function isSearchableQuote(text: string): boolean {
+  return quoteWeight(text) >= MIN_QUOTE_WEIGHT
+}
+
 /**
  * 页面级闪烁：原文片段找不到时（扫描页 / 引文有出入）至少把目标页标出来。
  * 与文本层高亮互补，保证「跳过去」一定有视觉反馈。
@@ -146,13 +167,14 @@ export function flashQuoteInPage(
   durationMs = 2600,
 ): boolean {
   const target = normalize(quote)
-  if (target.length < 6) return false
+  // 权重判断：3 个汉字（权重 6）就足够有区分度；纯拉丁仍要 6 个字符
+  if (!isSearchableQuote(quote)) return false
 
   const pageElement = container.querySelector<HTMLElement>(`.page[data-page-number="${page}"]`)
   if (pageElement === null) return false
 
   const candidates: string[] = [target]
-  if (target.length >= 24) candidates.push(target.slice(0, Math.max(18, Math.floor(target.length * 0.6))))
+  if (quoteWeight(target) >= 24) candidates.push(target.slice(0, Math.max(12, Math.floor(target.length * 0.6))))
 
   const apply = (elements: HTMLElement[]): boolean => {
       // 关键视觉：在命中文字处画脉冲框（视口坐标，挂在 body 上，重渲染也不丢）
