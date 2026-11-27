@@ -246,7 +246,7 @@ export function NodeLearningDialog({ nodeId, onNavigate }: NodeLearningDialogPro
               >
                 {node.figure !== null
                   ? `图表/表格节点：跳转会定位到第 ${node.figure.page} 页的 caption（没有逐字引文）。`
-                  : '没有可定位的原文锚点，也无法按页跳转。'}
+                  : '没有可定位的原文引文：跳转会按标题在 PDF 里搜索，找不到会给出提示。'}
               </p>
             ) : null}
           </section>
@@ -341,7 +341,7 @@ export function NodeLearningDialog({ nodeId, onNavigate }: NodeLearningDialogPro
                     <button
                       type="button"
                       onClick={() => {
-                        jumpNodeToPdf(node.id)
+                        void jumpNodeToPdf(node.id)
                         closeLearning()
                       }}
                       className="ml-2 shrink-0 rounded border border-akn-border px-1.5 py-0.5 text-[10px] text-akn-muted"
@@ -427,7 +427,9 @@ export function NodeLearningDialog({ nodeId, onNavigate }: NodeLearningDialogPro
         <footer className="flex items-center justify-between border-t border-akn-border px-4 py-2">
           <span className="text-[10px] text-akn-muted/60">
             {jumpTarget === null
-              ? '没有页码锚点，无法跳转原文'
+              ? activeDocument === null
+                ? '请先打开 PDF'
+                : '无引文锚点：按标题在 PDF 中搜索'
               : node.anchor !== null
                 ? `原文位置：第 ${jumpTarget.page} 页`
                 : `图表位置：第 ${jumpTarget.page} 页`}
@@ -435,9 +437,14 @@ export function NodeLearningDialog({ nodeId, onNavigate }: NodeLearningDialogPro
           <button
             type="button"
             data-testid="learning-jump-pdf"
-            disabled={jumpTarget === null}
+            disabled={activeDocument === null}
+            title={
+              jumpTarget === null
+                ? '没有可用的原文引文：会按知识点标题在 PDF 里搜索'
+                : '跳到原文并临时高亮'
+            }
             onClick={() => {
-              jumpNodeToPdf(node.id)
+              void jumpNodeToPdf(node.id)
               closeLearning()
             }}
             className="rounded border border-akn-border px-2 py-1 text-[11px] text-akn-muted hover:border-akn-accent/60 hover:text-akn-ink disabled:opacity-40"

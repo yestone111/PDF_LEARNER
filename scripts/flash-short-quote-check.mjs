@@ -6,9 +6,11 @@
  * 于是只整页闪、没有下划线。修法：改成「权重」判断（CJK 记 2，拉丁记 1，阈值 6），
  * 并把降级原因显示在 PDF 头部（以前写进 error 字段，PDF 打开时根本不渲染）。
  *
- * 本脚本往 IndexedDB 注入两条真实节点来复现：
+ * 本脚本往 IndexedDB 注入四条真实节点来复现：
  *  A. 4 字中文引文「三栏布局」（权重 8）→ 必须画出下划线闪烁；
- *  B. 2 字引文「布局」（权重 4）→ 明确降级：整页闪 + 头部提示，不假装命中。
+ *  B. 2 字引文「布局」（权重 4）→ 明确降级：整页闪 + 头部提示，不假装命中；
+ *  C. 没有任何锚点、只有标题「界面导览」→ 按标题在原文里搜到并画下划线（用户「点了没反应」的主因）；
+ *  D. 没有锚点、标题在原文里不存在 → 明确提示「没能在 PDF 里找到」，不猜页码。
  */
 
 import { spawn } from 'node:child_process'
@@ -60,6 +62,8 @@ class Cdp {
 
 const SHORT_ID = 'flash-short-cjk-node'
 const TINY_ID = 'flash-tiny-cjk-node'
+const TITLE_ONLY_ID = 'flash-title-only-node'
+const MISSING_TITLE_ID = 'flash-missing-title-node'
 
 const readIdb = (expression) => `new Promise((resolve) => { ${expression} })`
 
@@ -144,10 +148,16 @@ try {
           createdAt: now,
           updatedAt: now,
         })
+        const makeTitleOnly = (id, title) => ({
+          ...make(id, title, ''),
+          anchor: null,
+        })
         const txn = db.transaction('knowledgeNodes', 'readwrite')
         const store = txn.objectStore('knowledgeNodes')
         store.put(make('${SHORT_ID}', '短词锚点：三栏布局', '三栏布局'))
         store.put(make('${TINY_ID}', '过短锚点：布局', '布局'))
+        store.put(makeTitleOnly('${TITLE_ONLY_ID}', '界面导览'))
+        store.put(makeTitleOnly('${MISSING_TITLE_ID}', '量子纠缠与超导计算机'))
         txn.oncomplete = () => resolve('ok')
         txn.onerror = () => resolve(String(txn.error))
         txn.onabort = () => resolve('aborted')
@@ -173,7 +183,7 @@ try {
   await cdp.send('Page.reload', { ignoreCache: true })
   await waitFor('恢复文档', () => cdp.evaluate(`!!document.querySelector('[data-testid="pdf-viewer"]')`), 60000)
   await cdp.evaluate(`document.querySelector('[data-testid="center-tab-graph"]')?.click()`)
-  await waitFor('图谱恢复（含注入节点）', () => cdp.evaluate(`!!document.querySelector('[data-testid="graph-node-${SHORT_ID}"]') && !!document.querySelector('[data-testid="graph-node-${TINY_ID}"]')`), 60000)
+  await waitFor('图谱恢复（含注入节点）', () => cdp.evaluate(`!!document.querySelector('[data-testid="graph-node-${SHORT_ID}"]') && !!document.querySelector('[data-testid="graph-node-${TINY_ID}"]') && !!document.querySelector('[data-testid="graph-node-${TITLE_ONLY_ID}"]') && !!document.querySelector('[data-testid="graph-node-${MISSING_TITLE_ID}"]')`), 60000)
 
   const jumpFromNode = async (nodeId) => {
     await cdp.evaluate(`document.querySelector('[data-testid="learning-close"]')?.click()`)
@@ -231,6 +241,63 @@ try {
   check('过短引文不假装命中（没有画出下划线框）', boxesAfterB === boxesBeforeB, `before=${boxesBeforeB}, after=${boxesAfterB}`)
   check('整页闪烁作为兜底反馈', fallback.page === true)
   check('头部提示说明降级原因（以前写进不渲染的 error 字段，用户看不到）', /太短|未能逐字匹配/.test(fallback.hint), fallback.hint)
+
+  // ---------- C. 没有锚点、只有标题：按标题在原文里搜到并画下划线 ----------
+  await waitFor('上一条闪烁清理完毕', async () => (await cdp.evaluate(`document.querySelectorAll('[data-testid="flash-box"]').length`)) === 0, 8000)
+  await waitFor('上一条提示条已自动消失', () => cdp.evaluate(`!document.querySelector('[data-testid="pdf-flash-hint"]')`), 10000)
+  await cdp.evaluate(`document.querySelector('[data-testid="center-tab-graph"]')?.click()`)
+  await delay(200)
+  await cdp.evaluate(`document.querySelector('[data-testid="learning-close"]')?.click()`)
+  await delay(120)
+  await cdp.evaluate(`document.querySelector('[data-testid="graph-node-${TITLE_ONLY_ID}"]').click()`)
+  await waitFor('学习对话框（无锚点节点）', () => cdp.evaluate(`!!document.querySelector('[data-testid="learning-dialog"]')`), 15000)
+  await delay(300)
+  const titleOnlyDialog = await cdp.evaluate(`(() => ({
+    disabled: document.querySelector('[data-testid="learning-jump-pdf"]')?.disabled,
+    footer: (document.querySelector('[data-testid="learning-dialog"] footer')?.textContent ?? '').replace(/\\s+/g, ' ').trim(),
+    note: document.querySelector('[data-testid="learning-anchor-note"]')?.textContent?.trim() ?? '',
+  }))()`)
+  check('无锚点节点的跳转按钮可用（以前是灰的/点了没反应）', titleOnlyDialog.disabled === false)
+  check('底部说明「按标题在 PDF 中搜索」', /按标题/.test(titleOnlyDialog.footer), titleOnlyDialog.footer)
+  check('描述区提示按标题搜索而不是「无法跳转」', /按标题/.test(titleOnlyDialog.note), titleOnlyDialog.note)
+
+  await cdp.evaluate(`document.querySelector('[data-testid="learning-jump-pdf"]').click()`)
+  let titleBoxes = 0
+  try {
+    titleBoxes = await waitFor(
+      '标题兜底定位画出下划线',
+      () => cdp.evaluate(`document.querySelectorAll('[data-testid="flash-box"]').length`),
+      15000,
+    )
+  } catch {
+    titleBoxes = 0
+  }
+  check('无锚点节点按标题在原文里定位并画出下划线', titleBoxes > 0, `${titleBoxes} 条`)
+  const titleJump = await cdp.evaluate(`(() => ({
+    page: document.querySelector('[data-testid="page-indicator"]')?.textContent?.trim() ?? '',
+    hint: document.querySelector('[data-testid="pdf-flash-hint"]')?.textContent?.trim() ?? '',
+  }))()`)
+  check('跳到了标题所在的页（第 6 页）', titleJump.page.startsWith('6 /'), titleJump.page)
+  check('标题命中时不报降级提示', titleJump.hint === '', titleJump.hint || '无')
+
+  // ---------- D. 标题在原文里不存在：明确提示，不猜页码 ----------
+  await waitFor('上一条闪烁清理完毕', async () => (await cdp.evaluate(`document.querySelectorAll('[data-testid="flash-box"]').length`)) === 0, 8000)
+  await waitFor('上一条提示条已自动消失', () => cdp.evaluate(`!document.querySelector('[data-testid="pdf-flash-hint"]')`), 10000)
+  await cdp.evaluate(`document.querySelector('[data-testid="center-tab-graph"]')?.click()`)
+  await delay(200)
+  await cdp.evaluate(`document.querySelector('[data-testid="learning-close"]')?.click()`)
+  await delay(120)
+  await cdp.evaluate(`document.querySelector('[data-testid="graph-node-${MISSING_TITLE_ID}"]').click()`)
+  await waitFor('学习对话框（标题不存在）', () => cdp.evaluate(`!!document.querySelector('[data-testid="learning-dialog"]')`), 15000)
+  await delay(200)
+  await cdp.evaluate(`document.querySelector('[data-testid="learning-jump-pdf"]').click()`)
+  const missingHint = await waitFor(
+    '找不到原文的提示',
+    () => cdp.evaluate(`document.querySelector('[data-testid="pdf-flash-hint"]')?.textContent?.trim() ?? ''`),
+    15000,
+  ).catch(() => '')
+  check('标题在原文里不存在时给出明确提示（不静默失败）', /没能在 PDF 里找到/.test(missingHint), missingHint)
+  check('找不到时不画下划线（不假装命中）', (await cdp.evaluate(`document.querySelectorAll('[data-testid="flash-box"]').length`)) === 0)
 
   const shot = await cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true })
   await writeFile('docs/flash-short-quote.png', Buffer.from(shot.data, 'base64'))

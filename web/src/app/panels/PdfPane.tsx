@@ -73,28 +73,19 @@ export function PdfPane(): ReactElement {
 
   const viewerRef = useRef<HTMLDivElement | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
-  // 「跳转到原文」的短提示（引文太短/文本层缺失时的降级说明）。以前 setStatus 写进 error 字段，
-  // 但 PDF 已打开时那个占位组件根本不渲染 —— 用户完全看不到降级原因。
-  const [flashHint, setFlashHint] = useState<string | null>(null)
-  const flashHintTimer = useRef<number | null>(null)
+  // 「跳转到原文」的短提示放在 store 里：PdfPane 与 jumpNodeToPdf 都可能设置它，
+  // 以前写进 error 字段，但 PDF 已打开时那个占位组件根本不渲染 —— 用户完全看不到降级原因。
+  const flashHint = useDocumentStore((state) => state.flashHint)
+  const setFlashHint = useDocumentStore((state) => state.setFlashHint)
 
   const libraryHighlights = useMemo(() => highlights.map(toLibraryHighlight), [highlights])
 
-  useEffect(
-    () => () => {
-      if (flashHintTimer.current !== null) window.clearTimeout(flashHintTimer.current)
-    },
-    [],
-  )
-
-  const showFlashHint = useCallback((message: string): void => {
-    if (flashHintTimer.current !== null) window.clearTimeout(flashHintTimer.current)
-    setFlashHint(message)
-    flashHintTimer.current = window.setTimeout(() => {
-      setFlashHint(null)
-      flashHintTimer.current = null
-    }, 5000)
-  }, [])
+  // 提示条 5 秒后自动消失（每次文案变化都重新计时）
+  useEffect(() => {
+    if (flashHint === null) return
+    const timer = window.setTimeout(() => setFlashHint(null), 5000)
+    return () => window.clearTimeout(timer)
+  }, [flashHint, setFlashHint])
 
   /** 由滚动位置推断当前页（viewer 的页面容器带 data-page-number）。 */
   const trackVisiblePage = useCallback(() => {
@@ -180,7 +171,7 @@ export function PdfPane(): ReactElement {
           return
         }
         // 目标页始终没渲染出来：至少给一条明确提示，不静默失败
-        showFlashHint(`没能定位到第 ${pendingFlash.page} 页，PDF 可能仍在加载`)
+        setFlashHint(`没能定位到第 ${pendingFlash.page} 页，PDF 可能仍在加载`)
         consumeFlashRequest()
         return
       }
@@ -199,7 +190,7 @@ export function PdfPane(): ReactElement {
         }
         // 文本层始终没出来（扫描页 / 渲染失败）：兜底整页闪并说明原因
         flashPageInView(container, pendingFlash.page)
-        showFlashHint(`第 ${pendingFlash.page} 页没有可选中文本（可能是扫描页），已标出该页`)
+        setFlashHint(`第 ${pendingFlash.page} 页没有可选中文本（可能是扫描页），已标出该页`)
         consumeFlashRequest()
         return
       }
@@ -228,7 +219,7 @@ export function PdfPane(): ReactElement {
           // 兜底：匹配不到时才整页闪，并明确告知（不假装命中）
           flashPageInView(container, pendingFlash.page)
           pageFlashed = true
-          showFlashHint(
+          setFlashHint(
             searchable
               ? `已跳到第 ${pendingFlash.page} 页（这段引文未能逐字匹配，已标出该页）`
               : `引文「${pendingFlash.quote.slice(0, 12)}」太短，无法精确定位，已标出第 ${pendingFlash.page} 页`,
@@ -242,7 +233,7 @@ export function PdfPane(): ReactElement {
     return () => {
       cancelled = true
     }
-  }, [pendingFlash, consumeFlashRequest, centerTab, showFlashHint])
+  }, [pendingFlash, consumeFlashRequest, centerTab, setFlashHint])
 
   // 选中原文 → 自动成为下一条提问的 context chip（可删除）
   useEffect(() => {

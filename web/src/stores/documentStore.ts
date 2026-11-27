@@ -28,6 +28,8 @@ interface DocumentState {
   bookmarks: readonly ChapterBookmark[]
   /** 打开文档时自动跳到书签的提示；null = 不显示。 */
   bookmarkNotice: ChapterBookmark | null
+  /** PDF 头部的临时提示（跳转降级原因等），5 秒后自动清空。 */
+  flashHint: string | null
   /**
    * 待执行的跳页请求。放在 store 里的原因：
    * 目录在左栏、滚动能力在中栏（PdfHighlighter 的 scrollRef），
@@ -48,6 +50,7 @@ interface DocumentState {
   setBookmarks: (bookmarks: readonly ChapterBookmark[]) => void
   removeBookmark: (bookmarkId: string) => void
   setBookmarkNotice: (bookmark: ChapterBookmark | null) => void
+  setFlashHint: (hint: string | null) => void
   requestScrollToPage: (page: number) => void
   consumeScrollRequest: () => void
   requestFlashQuote: (page: number, quote: string) => void
@@ -70,6 +73,7 @@ export const useDocumentStore = create<DocumentState>()((set) => ({
   selectedChapterId: null,
   bookmarks: [],
   bookmarkNotice: null,
+  flashHint: null,
   pendingScrollPage: null,
   pendingFlash: null,
   status: 'idle',
@@ -86,6 +90,7 @@ export const useDocumentStore = create<DocumentState>()((set) => ({
       // 书签由 pdfController 在会话打开后异步载入（页面恢复时也要能自动跳过去）
       bookmarks: [],
       bookmarkNotice: null,
+      flashHint: null,
       pendingScrollPage: null,
       pendingFlash: null,
       status: 'ready',
@@ -119,6 +124,8 @@ export const useDocumentStore = create<DocumentState>()((set) => ({
 
   setBookmarkNotice: (bookmarkNotice) => set({ bookmarkNotice }),
 
+  setFlashHint: (flashHint) => set({ flashHint }),
+
   requestScrollToPage: (page) => set({ pendingScrollPage: Math.max(1, Math.floor(page)) }),
 
   consumeScrollRequest: () => set({ pendingScrollPage: null }),
@@ -139,6 +146,7 @@ export const useDocumentStore = create<DocumentState>()((set) => ({
       selectedChapterId: null,
       bookmarks: [],
       bookmarkNotice: null,
+      flashHint: null,
       pendingScrollPage: null,
       pendingFlash: null,
       status: 'idle',
