@@ -228,7 +228,23 @@ try {
   await waitFor('恢复文档', () => cdp.evaluate(`!!document.querySelector('[data-testid="pdf-viewer"]')`), 60000)
   // 刷新后中栏可能停在 PDF（上一次跳转留下的状态），图谱节点要切回图谱 Tab 才挂载
   await cdp.evaluate(`document.querySelector('[data-testid="center-tab-graph"]')?.click()`)
-  await waitFor('图谱恢复', () => cdp.evaluate(`!!document.querySelector('[data-testid="graph-node-${legacyId}"]')`), 60000)
+  const graphReady = () => cdp.evaluate(`!!document.querySelector('[data-testid="graph-node-${legacyId}"]')`)
+  try {
+    await waitFor('图谱恢复', graphReady, 30000).catch(async () => {
+      // 刷新后偶发「图谱 Tab 先于 store 就绪」：再点一次 Tab，多数情况立刻渲染
+      await cdp.evaluate(`document.querySelector('[data-testid="center-tab-graph"]')?.click()`)
+      await waitFor('图谱恢复（重试）', graphReady, 30000)
+    })
+  } catch (error) {
+    const diag = await cdp.evaluate(`(() => ({
+      tab: document.querySelector('[data-testid="center-tab-graph"]')?.getAttribute('aria-selected') ?? '',
+      nodes: [...document.querySelectorAll('[data-testid^="graph-node-"]')].map((el) => el.getAttribute('data-testid')).slice(0, 6),
+      nodeCount: document.querySelectorAll('[data-testid^="graph-node-"]').length,
+      status: document.querySelector('[data-testid="graph-pane"]')?.textContent?.slice(0, 160) ?? '',
+    }))()`)
+    console.log('   恢复诊断:', JSON.stringify(diag))
+    throw error
+  }
   const legacyDialog = await openDialog(cdp, legacyId)
   check('旧图表节点（无锚点）也能打开对话框', legacyDialog !== null)
   check('旧图表节点的跳转按钮可用', legacyDialog.jumpDisabled === false)

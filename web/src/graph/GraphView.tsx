@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ReactFlow, { Background, Controls, MarkerType, useReactFlow } from 'reactflow'
 
-import { COGNITIVE_LEVEL_LABELS, RELATION_EDGE_COLORS } from '../domain/enums'
+import { COGNITIVE_LEVEL_LABELS, MASTERY_LABELS, RELATION_EDGE_COLORS } from '../domain/enums'
 import { nodeDiameter, nodeWidth } from '../domain/nodeStyle'
 import { summarizeChapter, readCachedChapterSummary } from '../llm/pipeline/chapterSummary'
 import { extractChapterGraph, extractWholeDocument } from '../llm/pipeline/controller'
@@ -484,7 +484,7 @@ export function GraphView(): ReactElement {
       <p data-testid="graph-legend" className="flex flex-wrap gap-x-3 px-3 pt-1 text-[10px] text-akn-muted/80">
         <span>大小 = 关联程度（连边越多越大）</span>
         <span>颜色深浅 = 掌握难度（越深越难）</span>
-        <span>红 = 未掌握 · 绿 = 已掌握（点节点内圆点切换）</span>
+        <span>红 = 未掌握 · 绿 = 已掌握 · 黄 = 有疑问（点节点内圆点循环切换）</span>
         <span>从左到右 = 依赖方向</span>
         <span title="L1 定位 · L2 连接 · L3 推断 · L4 组织 · L5 选择">左上角 L1–L5 = 认知层级</span>
       </p>
@@ -518,7 +518,8 @@ export function GraphView(): ReactElement {
                     type="button"
                     data-testid={`path-item-${id}`}
                     data-selected={selectedNodeId === id ? 'true' : 'false'}
-                    title="在图谱中高亮这个知识点（看详情请点图谱里的节点）"
+                    data-mastery={item.mastery}
+                    title={`${item.title} · ${MASTERY_LABELS[item.mastery]}（在图谱中高亮这个知识点；看详情请点图谱里的节点）`}
                     onClick={() => {
                       selectNode(id)
                       focusNode(id)
@@ -534,7 +535,23 @@ export function GraphView(): ReactElement {
                     <span className="shrink-0 rounded bg-akn-accent/15 px-1 text-akn-accent">
                       L{item.cognitiveLevel} {COGNITIVE_LEVEL_LABELS[item.cognitiveLevel]}
                     </span>
-                    <span className="truncate">{item.title}</span>
+                    <span className="min-w-0 flex-1 truncate">{item.title}</span>
+                    {/* 与图谱节点同源的状态标记：已掌握 ✓ / 有疑问 ? / 未掌握（空） */}
+                    <span
+                      data-testid={`path-mastery-${id}`}
+                      data-state={item.mastery}
+                      aria-label={MASTERY_LABELS[item.mastery]}
+                      className={[
+                        'ml-auto shrink-0 font-mono text-[11px] leading-4',
+                        item.mastery === 'mastered'
+                          ? 'text-akn-ok'
+                          : item.mastery === 'doubt'
+                            ? 'text-akn-warn'
+                            : 'text-transparent',
+                      ].join(' ')}
+                    >
+                      {item.mastery === 'mastered' ? '✓' : item.mastery === 'doubt' ? '?' : '·'}
+                    </span>
                   </button>
                 </li>
               )

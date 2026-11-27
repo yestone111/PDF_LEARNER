@@ -1,5 +1,6 @@
 import { Handle, Position } from 'reactflow'
 
+import { MASTERY_LABELS, MASTERY_NEXT } from '../domain/enums'
 import { neutralNodeStyle, nodeStyle } from '../domain/nodeStyle'
 
 import type { NodeProps } from 'reactflow'
@@ -87,14 +88,15 @@ export function KnowledgeNodeView({ data }: NodeProps<KnowledgeNodeData>): React
       <button
         type="button"
         data-testid={`mastery-${data.nodeId}`}
-        title={data.mastery === 'mastered' ? '标记为未掌握' : '标记为已掌握'}
+        title={`当前：${MASTERY_LABELS[data.mastery]} · 点击标为「${MASTERY_LABELS[MASTERY_NEXT[data.mastery]]}」`}
+        data-next-mastery={MASTERY_NEXT[data.mastery]}
         onClick={(event) => {
           event.stopPropagation()
           data.onToggleMastery(data.nodeId)
         }}
         className="absolute -right-1.5 -bottom-1.5 z-10 grid h-5 w-5 place-items-center rounded-full border border-akn-border bg-akn-panel text-[10px] text-akn-ink shadow"
       >
-        {data.mastery === 'mastered' ? '✓' : '○'}
+        {data.mastery === 'mastered' ? '✓' : data.mastery === 'doubt' ? '?' : '○'}
       </button>
     </div>
   )

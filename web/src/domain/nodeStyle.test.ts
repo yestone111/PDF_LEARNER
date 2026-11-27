@@ -6,6 +6,18 @@ import type { Importance } from './enums'
 
 const LEVELS: readonly Importance[] = [1, 2, 3, 4, 5]
 
+/** 简易色相（0–360），用来区分红/绿/黄三系，不受深浅影响。 */
+function hue(hex: string): number {
+  const [r, g, b] = [1, 3, 5].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16) / 255)
+  const max = Math.max(r!, g!, b!)
+  const min = Math.min(r!, g!, b!)
+  const delta = max - min
+  if (delta === 0) return 0
+  const raw =
+    max === r ? ((g! - b!) / delta) % 6 : max === g ? (b! - r!) / delta + 2 : (r! - g!) / delta + 4
+  return (raw * 60 + 360) % 360
+}
+
 function luminance(hex: string): number {
   const value = hex.replace('#', '')
   const channels = [0, 2, 4].map((offset) => Number.parseInt(value.slice(offset, offset + 2), 16) / 255)
@@ -16,8 +28,8 @@ function luminance(hex: string): number {
 }
 
 describe('nodeStyle：难度决定深浅、掌握决定色相', () => {
-  it('难度越高颜色越深（未掌握与已掌握都成立）', () => {
-    for (const mastery of ['unmastered', 'mastered'] as const) {
+  it('难度越高颜色越深（未掌握 / 已掌握 / 有疑问都成立）', () => {
+    for (const mastery of ['unmastered', 'mastered', 'doubt'] as const) {
       const values = LEVELS.map((level) => luminance(nodeStyle(level, mastery).fill))
       for (let index = 1; index < values.length; index += 1) {
         expect(values[index]!).toBeLessThan(values[index - 1]!)
@@ -29,17 +41,22 @@ describe('nodeStyle：难度决定深浅、掌握决定色相', () => {
     for (const level of LEVELS) {
       const red = nodeStyle(level, 'unmastered')
       const green = nodeStyle(level, 'mastered')
+      const yellow = nodeStyle(level, 'doubt')
       expect(red.fontSize).toBe(green.fontSize)
-      expect(red.fill).not.toBe(green.fill)
+      expect(red.fontSize).toBe(yellow.fontSize)
+      expect(new Set([red.fill, green.fill, yellow.fill]).size).toBe(3)
     }
   })
 
-  it('未掌握是红系、已掌握是绿系', () => {
+  it('未掌握是红系、已掌握是绿系、有疑问是黄系（按色相判定，不靠通道大小）', () => {
     for (const level of LEVELS) {
       const red = nodeStyle(level, 'unmastered').fill
       const green = nodeStyle(level, 'mastered').fill
-      expect(Number.parseInt(red.slice(1, 3), 16)).toBeGreaterThan(Number.parseInt(red.slice(3, 5), 16))
-      expect(Number.parseInt(green.slice(3, 5), 16)).toBeGreaterThan(Number.parseInt(green.slice(1, 3), 16))
+      const yellow = nodeStyle(level, 'doubt').fill
+      expect(hue(red)).toBeLessThan(30) // 红/深红
+      expect(hue(green)).toBeGreaterThan(90) // 绿/深绿
+      expect(hue(yellow)).toBeGreaterThanOrEqual(35) // 金黄/深金
+      expect(hue(yellow)).toBeLessThanOrEqual(60)
     }
   })
 })
@@ -87,6 +104,7 @@ describe('neutralNodeStyle（无难度预测值）', () => {
     for (const level of LEVELS) {
       expect(nodeStyle(level, 'unmastered').fill).not.toBe(neutral.fill)
       expect(nodeStyle(level, 'mastered').fill).not.toBe(neutral.fill)
+      expect(nodeStyle(level, 'doubt').fill).not.toBe(neutral.fill)
     }
   })
 

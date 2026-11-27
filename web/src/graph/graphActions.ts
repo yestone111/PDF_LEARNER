@@ -1,6 +1,7 @@
 /** 图谱动作：掌握状态切换（落库）+ 节点 → PDF 跳转。 */
 
 import { setNodeMastery } from '../db/repositories/graph'
+import { MASTERY_NEXT } from '../domain'
 import { useDocumentStore } from '../stores/documentStore'
 import { useGraphStore } from '../stores/graphStore'
 import { useUiStore } from '../stores/uiStore'
@@ -11,7 +12,7 @@ import { jumpTargetOf } from './jumpTarget'
 export async function toggleNodeMastery(nodeId: string): Promise<void> {
   const node = useGraphStore.getState().nodesById[nodeId]
   if (node === undefined) return
-  const next = node.mastery === 'mastered' ? 'unmastered' : 'mastered'
+  const next = MASTERY_NEXT[node.mastery]
   await setNodeMastery(nodeId, next)
   useGraphStore.getState().toggleMastery(nodeId)
 }

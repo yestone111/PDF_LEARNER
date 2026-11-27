@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 
+import { MASTERY_NEXT } from '../domain'
 import type { KnowledgeEdge, KnowledgeNode, MasteryState } from '../domain'
 
 export type ExtractionStatus = 'idle' | 'running' | 'ready' | 'error'
@@ -48,7 +49,7 @@ interface GraphState {
 }
 
 function flip(mastery: MasteryState): MasteryState {
-  return mastery === 'mastered' ? 'unmastered' : 'mastered'
+  return MASTERY_NEXT[mastery]
 }
 
 /**

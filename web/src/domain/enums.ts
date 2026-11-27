@@ -11,8 +11,31 @@ export const IMPORTANCE_VALUES = [1, 2, 3, 4, 5] as const
 export type Importance = (typeof IMPORTANCE_VALUES)[number]
 
 /** 掌握状态：与重要度正交，切换掌握状态时不得丢失重要度深浅。 */
-export const MASTERY_STATES = ['unmastered', 'mastered'] as const
+/**
+ * 掌握状态三态：
+ *   unmastered 未掌握（红）
+ *   mastered   已掌握（绿）
+ *   doubt      有疑问（黄）—— 学过但还没吃透，需要回来再看
+ *
+ * 点击切换顺序固定为 未掌握 → 已掌握 → 有疑问 → 未掌握（MASTERY_NEXT），
+ * 这样「点一下 = 标记已掌握」的老行为不变。
+ */
+export const MASTERY_STATES = ['unmastered', 'doubt', 'mastered'] as const
 export type MasteryState = (typeof MASTERY_STATES)[number]
+
+/** 展示用中文标签（图谱、学习路径、笔记卡片共用一份，避免各写一套）。 */
+export const MASTERY_LABELS: Readonly<Record<MasteryState, string>> = {
+  unmastered: '未掌握',
+  doubt: '有疑问',
+  mastered: '已掌握',
+}
+
+/** 点一下切到哪个状态（顺序：未掌握 → 已掌握 → 有疑问 → 未掌握）。 */
+export const MASTERY_NEXT: Readonly<Record<MasteryState, MasteryState>> = {
+  unmastered: 'mastered',
+  mastered: 'doubt',
+  doubt: 'unmastered',
+}
 
 /** 节点作用域：global 属于总览图，chapter 属于章节子图（同一实体表，靠 parentId 分层）。 */
 export const NODE_SCOPES = ['global', 'chapter'] as const

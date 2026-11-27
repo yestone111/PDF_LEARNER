@@ -4,7 +4,7 @@
  * 三个正交维度（2026-11-20 按用户新语义重定义）：
  *  - 尺寸 ← 关联程度（degree：该节点连了多少条边）—— 越大代表涉及面越广；
  *  - 颜色深浅 ← 掌握难度 difficulty 1–5 —— 越深代表越难掌握；
- *  - 色相 ← 掌握状态 mastery —— 未掌握红系、已掌握绿系（点击可切换）。
+ *  - 色相 ← 掌握状态 mastery —— 未掌握红系、已掌握绿系、有疑问黄系（点击循环切换）。
  *
  * 切换掌握状态时**尺寸与深浅都不变、只有色相变**，避免节点跳动。
  * 组件里禁止出现任何手写颜色/尺寸判断：只能来自这里。
@@ -23,8 +23,10 @@ interface Ramp {
   readonly fontSize: number
   readonly unmastered: string
   readonly mastered: string
+  readonly doubt: string
   readonly textOnUnmastered: string
   readonly textOnMastered: string
+  readonly textOnDoubt: string
   readonly stroke: string
 }
 
@@ -34,40 +36,50 @@ const RAMP: Readonly<Record<Importance, Ramp>> = {
     fontSize: 16,
     unmastered: '#7f1d1d',
     mastered: '#14532d',
+    doubt: '#a16207',
     textOnUnmastered: '#f8fafc',
     textOnMastered: '#f8fafc',
+    textOnDoubt: '#fefce8',
     stroke: '#450a0a',
   },
   4: {
     fontSize: 15,
     unmastered: '#991b1b',
     mastered: '#166534',
+    doubt: '#ca8a04',
     textOnUnmastered: '#f8fafc',
     textOnMastered: '#f8fafc',
+    textOnDoubt: '#1c1917',
     stroke: '#450a0a',
   },
   3: {
     fontSize: 14,
     unmastered: '#b91c1c',
     mastered: '#15803d',
+    doubt: '#eab308',
     textOnUnmastered: '#f8fafc',
     textOnMastered: '#f8fafc',
+    textOnDoubt: '#422006',
     stroke: '#3f0a0a',
   },
   2: {
     fontSize: 13,
     unmastered: '#ef4444',
     mastered: '#22c55e',
+    doubt: '#facc15',
     textOnUnmastered: '#111827',
     textOnMastered: '#052e16',
+    textOnDoubt: '#422006',
     stroke: '#7f1d1d',
   },
   1: {
     fontSize: 12,
     unmastered: '#fca5a5',
     mastered: '#86efac',
+    doubt: '#fde047',
     textOnUnmastered: '#111827',
     textOnMastered: '#052e16',
+    textOnDoubt: '#422006',
     stroke: '#b91c1c',
   },
 }
@@ -78,11 +90,16 @@ const RAMP: Readonly<Record<Importance, Ramp>> = {
  */
 export function nodeStyle(difficulty: Importance, mastery: MasteryState): NodeStyle {
   const ramp = RAMP[difficulty]
-  const mastered = mastery === 'mastered'
+  if (mastery === 'mastered') {
+    return { fill: ramp.mastered, stroke: ramp.stroke, textColor: ramp.textOnMastered, fontSize: ramp.fontSize }
+  }
+  if (mastery === 'doubt') {
+    return { fill: ramp.doubt, stroke: ramp.stroke, textColor: ramp.textOnDoubt, fontSize: ramp.fontSize }
+  }
   return {
-    fill: mastered ? ramp.mastered : ramp.unmastered,
+    fill: ramp.unmastered,
     stroke: ramp.stroke,
-    textColor: mastered ? ramp.textOnMastered : ramp.textOnUnmastered,
+    textColor: ramp.textOnUnmastered,
     fontSize: ramp.fontSize,
   }
 }

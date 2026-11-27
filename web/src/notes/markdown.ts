@@ -7,6 +7,8 @@
  *  - 非 verified 的引注一律渲染为「无直接出处」，绝不把模型声称的页码写成出处。
  */
 
+import { MASTERY_LABELS } from '../domain/enums'
+import type { MasteryState } from '../domain/enums'
 import type { TiptapDoc, TiptapNode } from '../domain'
 
 export interface MarkdownOptions {
@@ -98,7 +100,8 @@ function renderImage(node: TiptapNode, options: MarkdownOptions, budget: ImageBu
 function renderNodeCard(node: TiptapNode): string {
   const title = typeof node.attrs?.title === 'string' ? node.attrs.title : '未命名节点'
   const importance = typeof node.attrs?.importance === 'number' ? node.attrs.importance : 3
-  const mastery = node.attrs?.mastery === 'mastered' ? '已掌握' : '未掌握'
+  const masteryState = (node.attrs?.mastery ?? 'unmastered') as MasteryState
+  const mastery = MASTERY_LABELS[masteryState]
   return blockQuote([`**【节点】${title}**`, `重要度 ${stars(importance)} · 状态：${mastery}`])
 }
 

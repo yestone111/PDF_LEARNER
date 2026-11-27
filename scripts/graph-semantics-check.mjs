@@ -147,6 +147,50 @@ try {
       const [r, g] = (after?.fill ?? '').match(/\d+/g).map(Number)
       return g > r
     })())
+
+    // ---- 三态循环：已掌握 → 有疑问（黄）→ 未掌握（红），并检查学习路径标记联动 ----
+    const readPathMarker = async (id) => cdp.evaluate(`(() => {
+      const el = document.querySelector('[data-testid="path-mastery-${id}"]')
+      return el === null ? null : { state: el.getAttribute('data-state'), text: el.textContent.trim() }
+    })()`)
+    const hueOf = (fill) => {
+      const [r, g, b] = (fill.match(/\d+/g) ?? []).slice(0, 3).map((value) => Number(value) / 255)
+      const max = Math.max(r, g, b)
+      const min = Math.min(r, g, b)
+      const delta = max - min
+      if (delta === 0) return 0
+      const raw = max === r ? ((g - b) / delta) % 6 : max === g ? (b - r) / delta + 2 : (r - g) / delta + 4
+      return (raw * 60 + 360) % 360
+    }
+
+    let marker = await readPathMarker(target0.id)
+    check('已掌握时学习路径条目出现打勾', marker === null || (marker.state === 'mastered' && marker.text === '✓'),
+      marker === null ? '该节点不在学习路径里（跳过）' : `${marker.text} / ${marker.state}`)
+
+    await cdp.evaluate(`document.querySelector('[data-testid="mastery-${target0.id}"]').click()`)
+    await delay(400)
+    const doubt = (await cdp.evaluate(READ)).find((n) => n.id === target0.id)
+    check('再点一次进入「有疑问」（黄系）', doubt?.mastery === 'doubt', `${doubt?.fill ?? ''}（hue=${Math.round(hueOf(doubt?.fill ?? ''))}）`)
+    check('黄色：色相在 35°–60°（金黄，不是红色也不是绿色）', doubt !== undefined && hueOf(doubt.fill) >= 35 && hueOf(doubt.fill) <= 60, `${Math.round(hueOf(doubt?.fill ?? ''))}°`)
+    check('有疑问时尺寸不变', doubt?.width === target0.width, `${target0.width} → ${doubt?.width}`)
+    marker = await readPathMarker(target0.id)
+    check('有疑问时学习路径条目出现问号', marker === null || (marker.state === 'doubt' && marker.text === '?'),
+      marker === null ? '该节点不在学习路径里（跳过）' : `${marker.text} / ${marker.state}`)
+
+    // 截图时把学习路径展开，顺便证明「黄 = ?」与「路径标记」是同一份状态
+    await cdp.evaluate(`(() => { const details = document.querySelector('[data-testid="learning-path"]'); if (details !== null) details.open = true; return true })()`)
+    await delay(250)
+    const doubtShot = await cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true })
+    await writeFile('docs/mastery-doubt.png', Buffer.from(doubtShot.data, 'base64'))
+    console.log('📸 有疑问状态截图：docs/mastery-doubt.png')
+
+    await cdp.evaluate(`document.querySelector('[data-testid="mastery-${target0.id}"]').click()`)
+    await delay(400)
+    const reset = (await cdp.evaluate(READ)).find((n) => n.id === target0.id)
+    check('第三次点击回到「未掌握」（红系）', reset?.mastery === 'unmastered' && hueOf(reset.fill) < 30, `${reset?.fill ?? ''}（hue=${Math.round(hueOf(reset?.fill ?? ''))}）`)
+    marker = await readPathMarker(target0.id)
+    check('未掌握时学习路径不显示打勾/问号', marker === null || (marker.state === 'unmastered' && marker.text === '·'),
+      marker === null ? '该节点不在学习路径里（跳过）' : marker.text)
   }
 
   // 选中一个节点：不相关节点**和连线**一起暗下去（用户反馈：线也要跟着暗）

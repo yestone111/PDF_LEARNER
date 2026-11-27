@@ -37,7 +37,12 @@ function chapter(
   }
 }
 
-function node(id: string, page: number | null, mastery: 'mastered' | 'unmastered', chapterId: string | null = null): KnowledgeNode {
+function node(
+  id: string,
+  page: number | null,
+  mastery: 'mastered' | 'unmastered' | 'doubt',
+  chapterId: string | null = null,
+): KnowledgeNode {
   return {
     id,
     documentId: 'doc',
@@ -87,6 +92,14 @@ describe('computeChapterProgress', () => {
     expect(progress.get('c1')).toEqual({ state: 'none', total: 2, mastered: 0 })
     expect(progress.get('c2-1')).toEqual({ state: 'none', total: 1, mastered: 0 })
     expect(progress.get('c2')).toEqual({ state: 'none', total: 1, mastered: 0 })
+  })
+
+  it('「有疑问」不算已掌握（章节进度仍按未掌握计）', () => {
+    const progress = computeChapterProgress(outline(), [
+      node('a', 3, 'mastered'),
+      node('b', 6, 'doubt'),
+    ])
+    expect(progress.get('c1')).toMatchObject({ state: 'partial', total: 2, mastered: 1 })
   })
 
   it('部分掌握 → partial；全掌握 → complete', () => {

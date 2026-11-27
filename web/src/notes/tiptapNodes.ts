@@ -6,6 +6,8 @@
 
 import { Node, mergeAttributes } from '@tiptap/core'
 
+import { MASTERY_LABELS, type MasteryState } from '../domain/enums'
+
 export const NodeCard = Node.create({
   name: 'nodeCard',
   group: 'block',
@@ -30,7 +32,7 @@ export const NodeCard = Node.create({
         'data-node-card': '',
         class: 'akn-note-card',
       }),
-      `【节点】${attrs.title ?? ''}（重要度 ${attrs.importance ?? 3}，${attrs.mastery === 'mastered' ? '已掌握' : '未掌握'}）`,
+      `【节点】${attrs.title ?? ''}（重要度 ${attrs.importance ?? 3}，${MASTERY_LABELS[(attrs.mastery ?? 'unmastered') as MasteryState]}）`,
     ]
   },
 })

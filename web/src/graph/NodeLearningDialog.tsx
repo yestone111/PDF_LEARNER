@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import { COGNITIVE_LEVEL_LABELS, UNIT_KIND_LABELS } from '../domain/enums'
+import { COGNITIVE_LEVEL_LABELS, MASTERY_LABELS, MASTERY_NEXT, UNIT_KIND_LABELS } from '../domain/enums'
 import { saveNote } from '../db/repositories/annotations'
 import { newId } from '../lib/id'
 import { renderRegionToPng } from '../pdf/figureRender'
@@ -141,6 +141,7 @@ export function NodeLearningDialog({ nodeId, onNavigate }: NodeLearningDialogPro
     <div
       data-testid="learning-dialog"
       data-node-id={node.id}
+      data-mastery={node.mastery}
       data-anchor-page={node.anchor?.page ?? ''}
       className="absolute inset-0 z-30 flex items-center justify-center bg-akn-scrim p-4 backdrop-blur-sm"
       onMouseDown={(event) => {
@@ -161,7 +162,11 @@ export function NodeLearningDialog({ nodeId, onNavigate }: NodeLearningDialogPro
               </span>
               {' · '}
               <span data-testid="learning-kind">{UNIT_KIND_LABELS[node.unitKind]}</span>
-              {' · '}重要度 {stars(node.importance)} · {node.mastery === 'mastered' ? '已掌握' : '未掌握'} ·
+              {' · '}重要度 {stars(node.importance)} ·{' '}
+              <span data-testid="learning-mastery" data-state={node.mastery}>
+                {MASTERY_LABELS[node.mastery]}
+              </span>{' '}
+              ·
               来源 {node.importanceSource}
               {node.anchor === null
                 ? node.figure !== null
@@ -177,7 +182,7 @@ export function NodeLearningDialog({ nodeId, onNavigate }: NodeLearningDialogPro
               onClick={() => void toggleNodeMastery(node.id)}
               className="rounded border border-akn-border px-2 py-1 text-[11px] text-akn-muted hover:border-akn-accent/60 hover:text-akn-ink"
             >
-              {node.mastery === 'mastered' ? '标为未掌握' : '标为已掌握'}
+              标为{MASTERY_LABELS[MASTERY_NEXT[node.mastery]]}
             </button>
             <button
               type="button"
