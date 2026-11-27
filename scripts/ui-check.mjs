@@ -102,7 +102,11 @@ const READ_GEOMETRY = `(() => {
   }
   const grid = document.querySelector('[data-testid="layout-grid"]')
   const root = document.querySelector('[data-testid="layout-root"]')
+  const rightElement = document.querySelector('[data-testid="panel-right"]')
   return {
+    rightHidden: rightElement === null || rightElement.offsetParent === null,
+    rightCollapsedAttr: rightElement?.getAttribute('data-collapsed') ?? null,
+    gridColumns: grid === null ? '' : getComputedStyle(grid).gridTemplateColumns,
     left: box('[data-testid="panel-left"]'),
     center: box('[data-testid="panel-center"]'),
     right: box('[data-testid="panel-right"]'),
@@ -359,7 +363,44 @@ async function main() {
       `left=${afterReset.left.width} right=${afterReset.right.width}`,
     )
 
-    /* -------------------------------------------------- 8. 截图（默认视图） */
+    /* -------------------------------------------------- 8. 右栏折叠 */
+    await cdp.evaluate(`document.querySelector('[data-testid="reset-widths"]').click()`)
+    await delay(250)
+    const expanded = await cdp.evaluate(READ_GEOMETRY)
+    await cdp.evaluate(`document.querySelector('[data-testid="toggle-right-dock"]').click()`)
+    await delay(350)
+    const collapsed = await cdp.evaluate(READ_GEOMETRY)
+    check('点「隐藏伴读」→ 右栏收起（display:none）', collapsed.rightHidden === true && collapsed.right.width === 0,
+      `hidden=${collapsed.rightHidden} right=${collapsed.right.width}`)
+    check('右栏收起后中栏变宽', collapsed.center.width > expanded.center.width + 100,
+      `center ${expanded.center.width} → ${collapsed.center.width}`)
+    check('右栏收起后右侧分隔条也移除', collapsed.splitterRight === null)
+    check('右栏收起后网格只剩三列', collapsed.gridColumns.split(' ').length === 3, collapsed.gridColumns)
+    const toggleState = await cdp.evaluate(`(() => {
+      const button = document.querySelector('[data-testid="toggle-right-dock"]')
+      return { pressed: button?.getAttribute('aria-pressed') ?? '', text: button?.textContent?.trim() ?? '' }
+    })()`)
+    check('顶部开关变成「显示伴读」且 aria-pressed=true', toggleState.pressed === 'true' && toggleState.text.includes('显示伴读'), JSON.stringify(toggleState))
+    check('收起后出现贴边展开按钮', await cdp.evaluate(`!!document.querySelector('[data-testid="right-dock-expand"]')`))
+    const collapsedShot = await cdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true })
+    await writeFile('docs/right-dock-collapsed.png', Buffer.from(collapsedShot.data, 'base64'))
+    console.log('📸 收起状态截图：docs/right-dock-collapsed.png')
+
+    await cdp.send('Page.reload', { ignoreCache: false })
+    await delay(1200)
+    await waitFor('刷新后重新渲染', () => cdp.evaluate(`document.querySelector('[data-testid="layout-grid"]') !== null`))
+    await delay(400)
+    const afterReloadCollapsed = await cdp.evaluate(READ_GEOMETRY)
+    check('刷新后仍保持收起（持久化）', afterReloadCollapsed.rightHidden === true, `hidden=${afterReloadCollapsed.rightHidden}`)
+
+    await cdp.evaluate(`document.querySelector('[data-testid="right-dock-expand"]').click()`)
+    await delay(350)
+    const expandedAgain = await cdp.evaluate(READ_GEOMETRY)
+    check('点贴边按钮 → 右栏恢复（宽度仍是 380）', expandedAgain.rightHidden === false && expandedAgain.right.width === 380,
+      `right=${expandedAgain.right.width}`)
+    check('展开后右侧分隔条回来', expandedAgain.splitterRight !== null)
+
+    /* -------------------------------------------------- 9. 截图（默认视图） */
     await cdp.evaluate(`document.querySelector('[data-testid="tab-chat"]').click()`)
     await delay(200)
     await cdp.send('Emulation.setDeviceMetricsOverride', {

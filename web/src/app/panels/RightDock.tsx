@@ -13,15 +13,31 @@ import { useUiStore, type RightTab } from '../../stores/uiStore'
 export function RightDock(): ReactElement {
   const rightTab = useUiStore((state) => state.rightTab)
   const setRightTab = useUiStore((state) => state.setRightTab)
+  const rightCollapsed = useUiStore((state) => state.rightCollapsed)
+  const setRightCollapsed = useUiStore((state) => state.setRightCollapsed)
 
   return (
     <aside
       data-testid="panel-right"
-      className="flex min-w-0 flex-col border-l border-akn-border bg-akn-panel"
+      data-collapsed={rightCollapsed ? 'true' : 'false'}
+      className={[
+        'min-w-0 flex-col border-l border-akn-border bg-akn-panel',
+        rightCollapsed ? 'hidden' : 'flex',
+      ].join(' ')}
     >
       <div role="tablist" aria-label="右侧面板" className="flex border-b border-akn-border">
         <TabButton id="chat" label="AI 伴读" active={rightTab === 'chat'} onSelect={setRightTab} />
         <TabButton id="notes" label="笔记" active={rightTab === 'notes'} onSelect={setRightTab} />
+        <button
+          type="button"
+          data-testid="right-dock-collapse"
+          onClick={() => setRightCollapsed(true)}
+          title="收起右侧栏（不用 AI 伴读 / 笔记时把空间让给 PDF）"
+          aria-label="收起右侧栏"
+          className="shrink-0 px-2 text-[12px] text-akn-muted transition-colors hover:bg-akn-raised hover:text-akn-ink"
+        >
+          »
+        </button>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto" data-testid="right-dock-body">

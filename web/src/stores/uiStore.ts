@@ -44,6 +44,8 @@ interface UiState {
   /** 主要语言：知识图谱/摘要/AI 对话的输出语言（引文仍保持原文）。 */
   primaryLanguage: PrimaryLanguage
   panelWidths: PanelWidths
+  /** 右栏（AI 伴读 / 笔记）是否收起：不用时把中栏让出来。 */
+  rightCollapsed: boolean
   exportPrefs: ExportPrefs
   /** 最近打开的文档 id：刷新页面后用它恢复现场（文档本体在 IndexedDB）。 */
   lastDocumentId: string | null
@@ -57,6 +59,8 @@ interface UiState {
   /** 窗口尺寸变化时把两侧宽度压回可用范围。 */
   clampPanelWidthsToContainer: (containerWidth: number) => void
   resetPanelWidths: () => void
+  setRightCollapsed: (collapsed: boolean) => void
+  toggleRightDock: () => void
   setMarkdownImageMode: (mode: MarkdownImageMode) => void
 }
 
@@ -67,6 +71,7 @@ type PersistedUi = Pick<
   | 'theme'
   | 'primaryLanguage'
   | 'panelWidths'
+  | 'rightCollapsed'
   | 'exportPrefs'
   | 'lastDocumentId'
 >
@@ -86,6 +91,7 @@ export const useUiStore = create<UiState>()(
       theme: DEFAULT_THEME,
       primaryLanguage: DEFAULT_PRIMARY_LANGUAGE,
       panelWidths: DEFAULT_PANEL_WIDTHS,
+      rightCollapsed: false,
       exportPrefs: INITIAL_EXPORT_PREFS,
       lastDocumentId: null,
 
@@ -105,13 +111,21 @@ export const useUiStore = create<UiState>()(
 
       clampPanelWidthsToContainer: (containerWidth) =>
         set((state) => {
-          const left = clampLeftWidth(state.panelWidths.left, containerWidth, state.panelWidths.right)
-          const right = clampRightWidth(state.panelWidths.right, containerWidth, left)
+          // 右栏收起时视为 0 宽：中栏应该能占满，左栏也不该被一个看不见的右栏挤住
+          const effectiveRight = state.rightCollapsed ? 0 : state.panelWidths.right
+          const left = clampLeftWidth(state.panelWidths.left, containerWidth, effectiveRight)
+          const right = state.rightCollapsed
+            ? state.panelWidths.right
+            : clampRightWidth(state.panelWidths.right, containerWidth, left)
           if (left === state.panelWidths.left && right === state.panelWidths.right) return state
           return { panelWidths: { left, right } }
         }),
 
       resetPanelWidths: () => set({ panelWidths: DEFAULT_PANEL_WIDTHS }),
+
+      setRightCollapsed: (rightCollapsed) => set({ rightCollapsed }),
+
+      toggleRightDock: () => set((state) => ({ rightCollapsed: !state.rightCollapsed })),
 
       setMarkdownImageMode: (markdownImageMode) =>
         set((state) => ({ exportPrefs: { ...state.exportPrefs, markdownImageMode } })),
@@ -125,6 +139,7 @@ export const useUiStore = create<UiState>()(
         theme: state.theme,
         primaryLanguage: state.primaryLanguage,
         panelWidths: state.panelWidths,
+        rightCollapsed: state.rightCollapsed,
         exportPrefs: state.exportPrefs,
         lastDocumentId: state.lastDocumentId,
       }),
@@ -141,6 +156,7 @@ export const useUiStore = create<UiState>()(
           theme: normalizeTheme(raw?.theme),
           primaryLanguage: normalizePrimaryLanguage(raw?.primaryLanguage),
           panelWidths: normalizePanelWidths(raw?.panelWidths),
+          rightCollapsed: raw?.rightCollapsed === true,
           exportPrefs: {
             markdownImageMode:
               raw?.exportPrefs?.markdownImageMode === 'placeholder' ? 'placeholder' : 'inline-base64',

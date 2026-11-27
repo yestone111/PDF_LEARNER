@@ -21,6 +21,8 @@ export function TopBar(): ReactElement {
   const theme = useUiStore((state) => state.theme)
   const setTheme = useUiStore((state) => state.setTheme)
   const primaryLanguage = useUiStore((state) => state.primaryLanguage)
+  const rightCollapsed = useUiStore((state) => state.rightCollapsed)
+  const toggleRightDock = useUiStore((state) => state.toggleRightDock)
   const setPrimaryLanguage = useUiStore((state) => state.setPrimaryLanguage)
 
   return (
@@ -48,6 +50,22 @@ export function TopBar(): ReactElement {
         <LanguageSelect value={primaryLanguage} onSelect={setPrimaryLanguage} />
         <ThemeSwitch theme={theme} onSelect={setTheme} />
         <OpenPdfButton />
+
+        <button
+          type="button"
+          onClick={toggleRightDock}
+          data-testid="toggle-right-dock"
+          aria-pressed={rightCollapsed}
+          title={rightCollapsed ? '展开右侧栏（AI 伴读 / 笔记）' : '收起右侧栏（AI 伴读 / 笔记）'}
+          className={[
+            'rounded-md border px-2 py-1 text-[11px] transition-colors',
+            rightCollapsed
+              ? 'border-akn-accent/50 bg-akn-accent/10 text-akn-accent'
+              : 'border-akn-border text-akn-muted hover:border-akn-accent/60 hover:text-akn-ink',
+          ].join(' ')}
+        >
+          {rightCollapsed ? '» 显示伴读' : '« 隐藏伴读'}
+        </button>
 
         <button
           type="button"

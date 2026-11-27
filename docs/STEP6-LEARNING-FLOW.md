@@ -202,3 +202,14 @@
 - 领域层去掉 `MASTERY_NEXT` 循环常量，改为 `setNodeMasteryFlag(nodeId, flag)`（同键再点 = 取消）。
 - 验收：`graph-semantics-check` 27 项（含「直接点 ? 一步到黄色」「再点取消回到未掌握」「标记在行首且 ≥14px」），
   `step6-learning-dialog` 新增「对话框有独立 ? 按钮」一项。
+
+## 11. v1.3.5：右侧（AI 伴读 / 笔记）可折叠
+
+用户需求：「右侧 AI 伴读和笔记最好能折叠收起来，如果不想使用的话。」
+
+- `uiStore.rightCollapsed`（持久化到 `akn.ui`）：折叠时布局模板从 5 列变 3 列（去掉右分隔条与右栏），
+  中栏自动吃掉多出来的宽度；`clampPanelWidthsToContainer` 在折叠时把右栏按 0 宽计算，不再无谓挤压左栏。
+- 三个入口：顶部「« 隐藏伴读」（`toggle-right-dock`，带 `aria-pressed`）、右栏 Tab 行的「»」（`right-dock-collapse`）、
+  收起后贴右边缘的竖排「« 伴读 / 笔记」（`right-dock-expand`）。
+- 右栏用 `display:none` 收起（不是卸载），聊天草稿 / 笔记编辑器状态不会丢。
+- 验收：`ui-check` 扩到 25 项（收起后右栏 0 宽、分隔条移除、网格 3 列、中栏 762→1148、刷新后仍收起、展开恢复 380）。

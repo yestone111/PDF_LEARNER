@@ -28,6 +28,8 @@ export function AppLayout(): ReactElement {
   const theme = useUiStore((state) => state.theme)
   const leftWidth = useUiStore((state) => state.panelWidths.left)
   const rightWidth = useUiStore((state) => state.panelWidths.right)
+  const rightCollapsed = useUiStore((state) => state.rightCollapsed)
+  const setRightCollapsed = useUiStore((state) => state.setRightCollapsed)
   const { dragging, beginResize, nudge } = usePanelResize(containerRef)
 
   // 主题：写到 <html data-theme>，CSS 变量随之整体切换（组件无需感知）
@@ -67,9 +69,11 @@ export function AppLayout(): ReactElement {
         <div
           ref={containerRef}
           data-testid="layout-grid"
-          className="grid h-full min-h-0 overflow-hidden rounded-xl border border-akn-border shadow-2xl"
+          className="relative grid h-full min-h-0 overflow-hidden rounded-xl border border-akn-border shadow-2xl"
           style={{
-            gridTemplateColumns: `${leftWidth}px ${LAYOUT_LIMITS.splitter}px minmax(${LAYOUT_LIMITS.center.min}px, 1fr) ${LAYOUT_LIMITS.splitter}px ${rightWidth}px`,
+            gridTemplateColumns: rightCollapsed
+              ? `${leftWidth}px ${LAYOUT_LIMITS.splitter}px minmax(${LAYOUT_LIMITS.center.min}px, 1fr)`
+              : `${leftWidth}px ${LAYOUT_LIMITS.splitter}px minmax(${LAYOUT_LIMITS.center.min}px, 1fr) ${LAYOUT_LIMITS.splitter}px ${rightWidth}px`,
           }}
         >
           <LeftSidebar />
@@ -80,13 +84,27 @@ export function AppLayout(): ReactElement {
             onNudge={(direction) => nudge('left', direction)}
           />
           <CenterPane />
-          <Splitter
-            side="right"
-            dragging={dragging === 'right'}
-            onPointerDown={beginResize('right')}
-            onNudge={(direction) => nudge('right', direction)}
-          />
+          {rightCollapsed ? null : (
+            <Splitter
+              side="right"
+              dragging={dragging === 'right'}
+              onPointerDown={beginResize('right')}
+              onNudge={(direction) => nudge('right', direction)}
+            />
+          )}
           <RightDock />
+          {rightCollapsed ? (
+            <button
+              type="button"
+              data-testid="right-dock-expand"
+              onClick={() => setRightCollapsed(false)}
+              title="展开右侧栏（AI 伴读 / 笔记）"
+              aria-label="展开右侧栏（AI 伴读 / 笔记）"
+              className="absolute top-1/2 right-2 z-20 -translate-y-1/2 rounded-full border border-akn-border bg-akn-panel px-1.5 py-2 text-[10px] text-akn-muted shadow transition-colors hover:border-akn-accent/60 hover:text-akn-ink"
+            >
+              <span className="block leading-[10px] [writing-mode:vertical-rl]">« 伴读 / 笔记</span>
+            </button>
+          ) : null}
         </div>
       </div>
 
