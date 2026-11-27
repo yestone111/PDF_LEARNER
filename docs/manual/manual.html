@@ -491,14 +491,19 @@ pnpm dev                               # 不加 LLM_MOCK</code></pre>
 <!-- ============ 8 ============ -->
 <h1><span class="chapter-kicker">CHAPTER 08</span>8 笔记与 Markdown 导出</h1>
 
-<h2>8.1 四类可插入内容</h2>
+<h2>8.1 可插入内容</h2>
 <table>
   <tr><th style="width:26%">按钮</th><th>来源</th></tr>
   <tr><td>节点卡片</td><td>当前在图谱里选中的知识点（标题 + 难度 + 掌握状态）。</td></tr>
   <tr><td>原文高亮</td><td>最近一条 PDF 高亮（原文 + 页码）。</td></tr>
   <tr><td>AI 回答</td><td>点了「发送到总结笔记」的回答，按钮上会显示待插入数量。</td></tr>
   <tr><td>图谱截图</td><td>当前知识图谱视图的 PNG（需先切到图谱视图）。</td></tr>
+  <tr><td>粘贴截图</td><td>系统截图工具（Win+Shift+S / ⌘⇧4 等）截完后，在笔记里直接 <b>Ctrl/Cmd+V</b>；
+    也可以点这个按钮尝试读剪贴板（浏览器不允许时会提示改用 Ctrl+V）。</td></tr>
+  <tr><td>本地图片</td><td>从磁盘选一张图片；也支持把图片<b>直接拖进</b>笔记编辑器。</td></tr>
 </table>
+<p>图片一律以 data URL 存在本机 IndexedDB（不上传），单张上限 8MB，超过会被拒绝并提示；
+  导出时按 8.2 的规则内联或降级。</p>
 
 <h2>8.2 导出 Markdown（P0）</h2>
 <p>点 <b>导出 .md</b>：先展示<b>真实序列化结果</b>的预览，再点「下载 .md」。降级规则是固定的：</p>

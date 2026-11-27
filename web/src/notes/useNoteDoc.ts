@@ -66,8 +66,15 @@ export function useNoteDoc(): {
         const body = latest.current
         if (current === null || body === null) return
         setSaveStatus('saving')
-        void saveNoteDoc({ ...current, tiptapJson: body, updatedAt: Date.now() })
-          .then(() => setSaveStatus('saved'))
+        const saved = { ...current, tiptapJson: body, updatedAt: Date.now() }
+        void saveNoteDoc(saved)
+          .then(() => {
+            setSaveStatus('saved')
+            // store 里的 noteDoc 也要跟上：切到别的 Tab 再回来时组件会重新挂载，
+            // 若只更新 IndexedDB，编辑器会先拿到旧内容，把刚写的东西覆盖掉。
+            const state = useNotesStore.getState()
+            if (state.noteDoc?.id === saved.id) state.setNoteDoc(saved)
+          })
           .catch((error: unknown) =>
             setSaveStatus('error', error instanceof Error ? error.message : String(error)),
           )

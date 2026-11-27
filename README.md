@@ -210,6 +210,7 @@ pnpm dev                # 同时拉起 Vite(5173) 与 Hono(8787)
 | `node scripts/outline-numbering-check.mjs` | 目录章节标志验收：编号 1 / 1.1 / 3.1.1 与「章」徽标（7 项） |
 | `node scripts/flash-check.mjs` | 「跳到 PDF 原文」验收：下划线闪烁 + 高亮 + 清理（8 项） |
 | `node scripts/flash-short-quote-check.mjs` | 短引文 / 无锚点标题兜底跳转：4 字必须画下划线，2 字与找不到的标题必须明确提示（16 项） |
+| `node scripts/note-image-check.mjs` | 笔记贴图：Ctrl+V 粘贴 / 拖拽 / 选文件 / 8MB 拒绝 / Markdown 内联 / 刷新后仍在（12 项） |
 | `node scripts/bookmark-progress-check.mjs` | 目录三态掌握圈 + 章节书签 + 刷新后自动跳书签（23 项） |
 | `node scripts/db-upgrade-check.mjs` | IndexedDB v1 → v2 迁移验收（不删库、新表建出来、老数据还在，6 项） |
 | `node scripts/table-jump-check.mjs` | 图表/表格知识点跳原文：新抽取（caption 锚点）+ 旧数据（无锚点兜底）（14 项） |

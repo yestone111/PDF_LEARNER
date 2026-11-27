@@ -213,3 +213,18 @@
   收起后贴右边缘的竖排「« 伴读 / 笔记」（`right-dock-expand`）。
 - 右栏用 `display:none` 收起（不是卸载），聊天草稿 / 笔记编辑器状态不会丢。
 - 验收：`ui-check` 扩到 25 项（收起后右栏 0 宽、分隔条移除、网格 3 列、中栏 762→1148、刷新后仍收起、展开恢复 380）。
+
+## 12. v1.3.6：笔记可以直接贴系统截图
+
+用户需求：「笔记不能贴截图可惜了点，怎么能贴自己在系统里截的图呢？」
+
+- TipTap `editorProps` 增加 `handlePaste` / `handleDrop`：剪贴板或拖拽里的 `image/*` File 转 data URL，
+  作为 `graphImage` 节点插入（标注「粘贴的截图」/「拖入的图片」/文件名），复用既有渲染与 Markdown 降级规则。
+- 工具栏新增「粘贴截图」（尝试 `navigator.clipboard.read()`，被浏览器拒绝时提示改用 Ctrl+V）
+  与「本地图片」（文件选择，支持多选）。
+- 单张 8MB 上限，超限明确拒绝并提示；图片只存本机 IndexedDB，不上传。
+- **修掉一个真实的覆盖 bug**：刷新后编辑器先是 EMPTY_DOC，若此时触发 onUpdate，
+  防抖保存会用空文档覆盖已保存的笔记（贴图后刷新会丢图）。现在用 `hydratedRef` 守卫：
+  只有从 IndexedDB 灌入内容之后才允许保存。
+- 验收：`note-image-check.mjs` 12 项（粘贴 / 拖拽 / 选文件 / 8MB 拒绝 / Markdown 内联 / 刷新后仍在），
+  连跑 3 次稳定；`fixtures/note-screenshot.png` 为 16×16 测试图。

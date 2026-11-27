@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { toPng } from 'html-to-image'
@@ -17,8 +17,21 @@ import type { ReactElement } from 'react'
 
 /**
  * 右侧「笔记」面板（模块五）：TipTap 混排 + Markdown 导出（P0）。
- * 自定义节点：图谱节点卡片 / 原文高亮 / AI 回答 / 图谱截图。
+ * 自定义节点：图谱节点卡片 / 原文高亮 / AI 回答 / 图片（图谱截图、系统截图、本地图片）。
  */
+
+/** 单张图片上限：超过就拒绝（避免把笔记 JSON / IndexedDB 撑爆）。 */
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024
+type ImageSource = 'paste' | 'drop' | 'picker'
+
+function readAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '')
+    reader.onerror = () => reject(reader.error ?? new Error('读取图片失败'))
+    reader.readAsDataURL(file)
+  })
+}
 export function NotePanel(): ReactElement {
   const noteDoc = useNotesStore((state) => state.noteDoc)
   const saveStatus = useNotesStore((state) => state.saveStatus)
@@ -29,6 +42,13 @@ export function NotePanel(): ReactElement {
 
   const [hint, setHint] = useState<string | null>(null)
   const [exportResult, setExportResult] = useState<MarkdownResult | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  // 只有「已从 IndexedDB 灌入内容」或「用户已经动手」之后才允许保存：
+  // 否则刷新瞬间编辑器还是 EMPTY_DOC，一次 onUpdate 就会把已保存的笔记覆盖成空文档。
+  const hydratedRef = useRef(false)
+  const userEditedRef = useRef(false)
+  // editorProps 在编辑器创建时固定，这里用 ref 把最新的插入函数传进去
+  const insertImageRef = useRef<((file: File, source: ImageSource) => void) | null>(null)
 
   const extensions = useMemo(
     () => [StarterKit.configure({ heading: { levels: [1, 2, 3] } }), NodeCard, HighlightQuote, ChatCard, GraphImage],
@@ -40,18 +60,53 @@ export function NotePanel(): ReactElement {
     content: EMPTY_DOC as never,
     editorProps: {
       attributes: { class: 'akn-note-editor', 'data-testid': 'note-editor' },
+      // 系统截图 → Ctrl/Cmd+V 直接贴进笔记（File 走 DataTransfer，不上传任何地方）
+      handlePaste: (_view, event) => {
+        const files = [...(event.clipboardData?.files ?? [])].filter((file) => file.type.startsWith('image/'))
+        if (files.length === 0) return false
+        event.preventDefault()
+        for (const file of files) insertImageRef.current?.(file, 'paste')
+        return true
+      },
+      // 从桌面/截图工具直接拖进来
+      handleDrop: (_view, event, _slice, moved) => {
+        if (moved) return false
+        const files = [...((event as DragEvent).dataTransfer?.files ?? [])].filter((file) =>
+          file.type.startsWith('image/'),
+        )
+        if (files.length === 0) return false
+        event.preventDefault()
+        for (const file of files) insertImageRef.current?.(file, 'drop')
+        return true
+      },
     },
     onUpdate: ({ editor: instance }) => {
+      // 用户先于「加载完成」动手时，以用户输入为准（不能丢字），并允许随后保存
+      userEditedRef.current = true
+      hydratedRef.current = true
       persist(instance.getJSON() as TiptapDoc)
     },
   })
 
   // 文档切换后把持久化内容灌进编辑器（不触发 onUpdate，避免回环保存）
   useEffect(() => {
-    if (editor === null || noteDoc === null) return
+    if (noteDoc === null) {
+      hydratedRef.current = false
+      userEditedRef.current = false
+      return
+    }
+    if (editor === null) return
+    if (userEditedRef.current) {
+      // 用户已经先动手：绝不覆盖正在输入的内容
+      hydratedRef.current = true
+      return
+    }
+    // 跟随 noteDoc：切 Tab 回来 / 数据库异步加载完成时都要把内容灌回去
     const incoming = JSON.stringify(noteDoc.tiptapJson)
-    if (JSON.stringify(editor.getJSON()) === incoming) return
-    editor.commands.setContent(noteDoc.tiptapJson as never, { emitUpdate: false })
+    if (JSON.stringify(editor.getJSON()) !== incoming) {
+      editor.commands.setContent(noteDoc.tiptapJson as never, { emitUpdate: false })
+    }
+    hydratedRef.current = true
   }, [editor, noteDoc])
 
   const insertNodeCard = (): void => {
@@ -112,6 +167,63 @@ export function NotePanel(): ReactElement {
     setHint(null)
   }
 
+  const insertImageFile = useCallback(
+    async (file: File, source: ImageSource): Promise<void> => {
+      if (editor === null) return
+      if (!file.type.startsWith('image/')) {
+        setHint('只支持图片（PNG / JPEG / WebP / GIF）')
+        return
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        setHint(
+          `图片 ${Math.round((file.size / 1024 / 1024) * 10) / 10}MB，超过 ${MAX_IMAGE_BYTES / 1024 / 1024}MB 上限，已拒绝`,
+        )
+        return
+      }
+      try {
+        const src = await readAsDataUrl(file)
+        if (src === '') {
+          setHint('读取图片失败（文件为空或格式不支持）')
+          return
+        }
+        const alt =
+          source === 'paste' ? '粘贴的截图' : source === 'drop' ? '拖入的图片' : file.name || '本地图片'
+        editor.chain().focus('end').insertContent({ type: 'graphImage', attrs: { src, alt } }).run()
+        setHint(null)
+      } catch (error) {
+        setHint(`插入图片失败：${error instanceof Error ? error.message : String(error)}`)
+      }
+    },
+    [editor],
+  )
+
+  // 把最新的插入函数交给 editorProps 里的 paste/drop 回调
+  useEffect(() => {
+    insertImageRef.current = (file, source) => {
+      void insertImageFile(file, source)
+    }
+    return () => {
+      insertImageRef.current = null
+    }
+  }, [insertImageFile])
+
+  /** 工具栏「粘贴截图」：浏览器允许读剪贴板时一步插入；不允许就提示用 Ctrl+V。 */
+  const pasteFromClipboard = async (): Promise<void> => {
+    try {
+      const items = await navigator.clipboard.read()
+      for (const item of items) {
+        const type = item.types.find((candidate) => candidate.startsWith('image/'))
+        if (type === undefined) continue
+        const blob = await item.getType(type)
+        await insertImageFile(new File([blob], 'clipboard.png', { type }), 'paste')
+        return
+      }
+      setHint('剪贴板里没有图片；系统截图后直接按 Ctrl/Cmd+V 也可以')
+    } catch {
+      setHint('浏览器不允许直接读剪贴板：请用 Ctrl/Cmd+V 粘贴，或点「本地图片」选择文件')
+    }
+  }
+
   const insertGraphImage = async (): Promise<void> => {
     const target = document.querySelector('.react-flow__viewport') as HTMLElement | null
     const surface = (target?.parentElement ?? null) as HTMLElement | null
@@ -167,6 +279,25 @@ export function NotePanel(): ReactElement {
           onClick={insertChatCard}
         />
         <ToolbarButton label="图谱截图" testId="insert-graph-image" onClick={() => void insertGraphImage()} />
+        <ToolbarButton label="粘贴截图" testId="insert-clipboard-image" onClick={() => void pasteFromClipboard()} />
+        <ToolbarButton
+          label="本地图片"
+          testId="insert-local-image"
+          onClick={() => fileInputRef.current?.click()}
+        />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          data-testid="note-image-input"
+          className="hidden"
+          onChange={(event) => {
+            const files = [...(event.target.files ?? [])]
+            event.target.value = ''
+            for (const file of files) void insertImageFile(file, 'picker')
+          }}
+        />
         <ToolbarButton label="导出 .md" testId="export-markdown" onClick={runExport} accent />
       </div>
 
