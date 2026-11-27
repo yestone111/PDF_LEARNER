@@ -285,6 +285,15 @@ async function main() {
     )
     check('对话框里可以切换掌握状态', masteryBefore !== masteryAfter && masteryAfter !== '', `${masteryBefore} → ${masteryAfter}`)
 
+    await cdp.evaluate(`document.querySelector('[data-testid="learning-toggle-doubt"]').click()`)
+    await delay(400)
+    const doubtState = await cdp.evaluate(
+      `document.querySelector('[data-testid="learning-dialog"]')?.getAttribute('data-mastery') ?? ''`,
+    )
+    check('对话框提供独立的「? 有疑问」按钮（不需要循环点击）', doubtState === 'doubt', doubtState)
+    await cdp.evaluate(`document.querySelector('[data-testid="learning-toggle-doubt"]').click()`)
+    await delay(300)
+
     // ---------------- 5. 知识点笔记落库 ----------------
     await cdp.evaluate(`document.querySelector('[data-testid="learning-note-input"]').focus()`)
     await cdp.send('Input.insertText', { text: '我的理解：注意力就是加权求和。' })

@@ -151,7 +151,17 @@ try {
     // ---- 三态循环：已掌握 → 有疑问（黄）→ 未掌握（红），并检查学习路径标记联动 ----
     const readPathMarker = async (id) => cdp.evaluate(`(() => {
       const el = document.querySelector('[data-testid="path-mastery-${id}"]')
-      return el === null ? null : { state: el.getAttribute('data-state'), text: el.textContent.trim() }
+      if (el === null) return null
+      const row = el.closest('[data-testid^="path-item-"]')
+      const box = el.getBoundingClientRect()
+      const rowBox = row === null ? null : row.getBoundingClientRect()
+      return {
+        state: el.getAttribute('data-state'),
+        text: el.textContent.trim(),
+        w: Math.round(box.width),
+        // 标记在行首：距整行左边 < 30px
+        offsetLeft: rowBox === null ? -1 : Math.round(box.left - rowBox.left),
+      }
     })()`)
     const hueOf = (fill) => {
       const [r, g, b] = (fill.match(/\d+/g) ?? []).slice(0, 3).map((value) => Number(value) / 255)
@@ -166,8 +176,11 @@ try {
     let marker = await readPathMarker(target0.id)
     check('已掌握时学习路径条目出现打勾', marker === null || (marker.state === 'mastered' && marker.text === '✓'),
       marker === null ? '该节点不在学习路径里（跳过）' : `${marker.text} / ${marker.state}`)
+    check('打勾标记在行首、且看得清（≥14px）', marker === null || (marker.offsetLeft >= 0 && marker.offsetLeft < 30 && marker.w >= 14),
+      marker === null ? '跳过' : `left=${marker.offsetLeft}px, size=${marker.w}px`)
 
-    await cdp.evaluate(`document.querySelector('[data-testid="mastery-${target0.id}"]').click()`)
+    // 显式按钮：已掌握 → 点「? 有疑问」直接切黄色（不再需要循环点击）
+    await cdp.evaluate(`document.querySelector('[data-testid="doubt-${target0.id}"]').click()`)
     await delay(400)
     const doubt = (await cdp.evaluate(READ)).find((n) => n.id === target0.id)
     check('再点一次进入「有疑问」（黄系）', doubt?.mastery === 'doubt', `${doubt?.fill ?? ''}（hue=${Math.round(hueOf(doubt?.fill ?? ''))}）`)
@@ -184,13 +197,22 @@ try {
     await writeFile('docs/mastery-doubt.png', Buffer.from(doubtShot.data, 'base64'))
     console.log('📸 有疑问状态截图：docs/mastery-doubt.png')
 
-    await cdp.evaluate(`document.querySelector('[data-testid="mastery-${target0.id}"]').click()`)
+    // 再点同一个「?」按钮 = 取消（回到未掌握）
+    await cdp.evaluate(`document.querySelector('[data-testid="doubt-${target0.id}"]').click()`)
     await delay(400)
     const reset = (await cdp.evaluate(READ)).find((n) => n.id === target0.id)
-    check('第三次点击回到「未掌握」（红系）', reset?.mastery === 'unmastered' && hueOf(reset.fill) < 30, `${reset?.fill ?? ''}（hue=${Math.round(hueOf(reset?.fill ?? ''))}）`)
+    check('再点「有疑问」按钮取消，回到未掌握（红系）', reset?.mastery === 'unmastered' && hueOf(reset.fill) < 30, `${reset?.fill ?? ''}（hue=${Math.round(hueOf(reset?.fill ?? ''))}）`)
     marker = await readPathMarker(target0.id)
-    check('未掌握时学习路径不显示打勾/问号', marker === null || (marker.state === 'unmastered' && marker.text === '·'),
-      marker === null ? '该节点不在学习路径里（跳过）' : marker.text)
+    check('未掌握时学习路径不显示打勾/问号', marker === null || (marker.state === 'unmastered' && marker.text === ''),
+      marker === null ? '该节点不在学习路径里（跳过）' : `text="${marker.text}"`)
+
+    // 两个按钮是显式的：从「未掌握」直接点「?」也能一步到位（不必先点 ✓）
+    await cdp.evaluate(`document.querySelector('[data-testid="doubt-${target0.id}"]').click()`)
+    await delay(300)
+    const direct = (await cdp.evaluate(READ)).find((n) => n.id === target0.id)
+    check('未掌握时直接点「? 有疑问」一步到黄色', direct?.mastery === 'doubt', `${direct?.fill ?? ''}`)
+    await cdp.evaluate(`document.querySelector('[data-testid="doubt-${target0.id}"]').click()`)
+    await delay(300)
   }
 
   // 选中一个节点：不相关节点**和连线**一起暗下去（用户反馈：线也要跟着暗）

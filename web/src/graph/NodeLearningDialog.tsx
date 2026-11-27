@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import { COGNITIVE_LEVEL_LABELS, MASTERY_LABELS, MASTERY_NEXT, UNIT_KIND_LABELS } from '../domain/enums'
+import { COGNITIVE_LEVEL_LABELS, MASTERY_LABELS, UNIT_KIND_LABELS } from '../domain/enums'
 import { saveNote } from '../db/repositories/annotations'
 import { newId } from '../lib/id'
 import { renderRegionToPng } from '../pdf/figureRender'
@@ -8,7 +8,7 @@ import { enrichNode } from '../llm/pipeline/enrich'
 import { loadNodeExcerpt, type NodeExcerpt } from '../pdf/excerptController'
 import { useDocumentStore } from '../stores/documentStore'
 import { useGraphStore } from '../stores/graphStore'
-import { jumpNodeToPdf, toggleNodeMastery } from './graphActions'
+import { jumpNodeToPdf, setNodeMasteryFlag } from './graphActions'
 import { jumpTargetOf } from './jumpTarget'
 
 import type { KnowledgeNode } from '../domain'
@@ -179,10 +179,32 @@ export function NodeLearningDialog({ nodeId, onNavigate }: NodeLearningDialogPro
             <button
               type="button"
               data-testid="learning-toggle-mastery"
-              onClick={() => void toggleNodeMastery(node.id)}
-              className="rounded border border-akn-border px-2 py-1 text-[11px] text-akn-muted hover:border-akn-accent/60 hover:text-akn-ink"
+              data-active={node.mastery === 'mastered' ? 'true' : 'false'}
+              title={node.mastery === 'mastered' ? '已掌握 · 点击取消' : '标为已掌握'}
+              onClick={() => void setNodeMasteryFlag(node.id, 'mastered')}
+              className={[
+                'rounded border px-2 py-1 text-[11px]',
+                node.mastery === 'mastered'
+                  ? 'border-akn-ok bg-akn-ok-soft text-akn-ok'
+                  : 'border-akn-border text-akn-muted hover:border-akn-ok/60 hover:text-akn-ok',
+              ].join(' ')}
             >
-              标为{MASTERY_LABELS[MASTERY_NEXT[node.mastery]]}
+              ✓ 已掌握
+            </button>
+            <button
+              type="button"
+              data-testid="learning-toggle-doubt"
+              data-active={node.mastery === 'doubt' ? 'true' : 'false'}
+              title={node.mastery === 'doubt' ? '有疑问 · 点击取消' : '标为有疑问'}
+              onClick={() => void setNodeMasteryFlag(node.id, 'doubt')}
+              className={[
+                'rounded border px-2 py-1 text-[11px]',
+                node.mastery === 'doubt'
+                  ? 'border-akn-warn bg-akn-warn-soft text-akn-warn'
+                  : 'border-akn-border text-akn-muted hover:border-akn-warn/60 hover:text-akn-warn',
+              ].join(' ')}
+            >
+              ? 有疑问
             </button>
             <button
               type="button"

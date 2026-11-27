@@ -1,7 +1,7 @@
 /** 图谱动作：掌握状态切换（落库）+ 节点 → PDF 跳转。 */
 
 import { setNodeMastery } from '../db/repositories/graph'
-import { MASTERY_NEXT } from '../domain'
+import type { MasteryFlag } from '../domain'
 import { useDocumentStore } from '../stores/documentStore'
 import { useGraphStore } from '../stores/graphStore'
 import { useUiStore } from '../stores/uiStore'
@@ -9,12 +9,16 @@ import { requestPageNavigation } from '../pdf/pdfController'
 import { findNodeTextInPdf } from '../pdf/jumpSearch'
 import { jumpTargetOf } from './jumpTarget'
 
-export async function toggleNodeMastery(nodeId: string): Promise<void> {
+/**
+ * 设置掌握状态（显式按钮）：点「已掌握」→ mastered，点「有疑问」→ doubt；
+ * 再点同一个按钮 = 取消，回到 unmastered。
+ */
+export async function setNodeMasteryFlag(nodeId: string, flag: MasteryFlag): Promise<void> {
   const node = useGraphStore.getState().nodesById[nodeId]
   if (node === undefined) return
-  const next = MASTERY_NEXT[node.mastery]
+  const next = node.mastery === flag ? 'unmastered' : flag
   await setNodeMastery(nodeId, next)
-  useGraphStore.getState().toggleMastery(nodeId)
+  useGraphStore.getState().setNodeMastery(nodeId, next)
 }
 
 /**

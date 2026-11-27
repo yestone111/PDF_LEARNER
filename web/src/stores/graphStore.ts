@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 
-import { MASTERY_NEXT } from '../domain'
 import type { KnowledgeEdge, KnowledgeNode, MasteryState } from '../domain'
 
 export type ExtractionStatus = 'idle' | 'running' | 'ready' | 'error'
@@ -43,13 +42,9 @@ interface GraphState {
   selectNode: (nodeId: string | null) => void
   openLearning: (nodeId: string) => void
   closeLearning: () => void
-  /** 掌握状态切换：只动 mastery，不动 importance（两个维度正交）。 */
-  toggleMastery: (nodeId: string) => void
+  /** 直接设置掌握状态：只动 mastery，不动 importance（两个维度正交）。 */
+  setNodeMastery: (nodeId: string, mastery: MasteryState) => void
   clear: () => void
-}
-
-function flip(mastery: MasteryState): MasteryState {
-  return MASTERY_NEXT[mastery]
 }
 
 /**
@@ -98,14 +93,14 @@ export const useGraphStore = create<GraphState>()((set) => ({
 
   closeLearning: () => set({ learningNodeId: null }),
 
-  toggleMastery: (nodeId) =>
+  setNodeMastery: (nodeId, mastery) =>
     set((state) => {
       const node = state.nodesById[nodeId]
       if (node === undefined) return state
       return {
         nodesById: {
           ...state.nodesById,
-          [nodeId]: { ...node, mastery: flip(node.mastery), updatedAt: Date.now() },
+          [nodeId]: { ...node, mastery, updatedAt: Date.now() },
         },
       }
     }),

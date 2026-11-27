@@ -1,11 +1,11 @@
 import { Handle, Position } from 'reactflow'
 
-import { MASTERY_LABELS, MASTERY_NEXT } from '../domain/enums'
+import { MASTERY_LABELS } from '../domain/enums'
 import { neutralNodeStyle, nodeStyle } from '../domain/nodeStyle'
 
 import type { NodeProps } from 'reactflow'
 import type { ReactElement } from 'react'
-import type { MasteryState } from '../domain/enums'
+import type { MasteryFlag, MasteryState } from '../domain/enums'
 import type { Importance } from '../domain/enums'
 
 export interface KnowledgeNodeData {
@@ -25,7 +25,8 @@ export interface KnowledgeNodeData {
   readonly hasFigure: boolean
   readonly dimmed: boolean
   readonly selected: boolean
-  readonly onToggleMastery: (nodeId: string) => void
+  /** 显式按钮：mastered=已掌握，doubt=有疑问；再点同一个按钮 = 取消。 */
+  readonly onSetMasteryFlag: (nodeId: string, flag: MasteryFlag) => void
 }
 
 /**
@@ -85,19 +86,53 @@ export function KnowledgeNodeView({ data }: NodeProps<KnowledgeNodeData>): React
         {data.label}
       </span>
       <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
-      <button
-        type="button"
-        data-testid={`mastery-${data.nodeId}`}
-        title={`当前：${MASTERY_LABELS[data.mastery]} · 点击标为「${MASTERY_LABELS[MASTERY_NEXT[data.mastery]]}」`}
-        data-next-mastery={MASTERY_NEXT[data.mastery]}
-        onClick={(event) => {
-          event.stopPropagation()
-          data.onToggleMastery(data.nodeId)
-        }}
-        className="absolute -right-1.5 -bottom-1.5 z-10 grid h-5 w-5 place-items-center rounded-full border border-akn-border bg-akn-panel text-[10px] text-akn-ink shadow"
-      >
-        {data.mastery === 'mastered' ? '✓' : data.mastery === 'doubt' ? '?' : '○'}
-      </button>
+      {/* 两个显式按钮（不要单按钮循环）：✓ 已掌握 / ? 有疑问；再点同一个 = 取消 */}
+      <div className="absolute -right-2 -bottom-2 z-10 flex items-center gap-0.5">
+        <button
+          type="button"
+          data-testid={`mastery-${data.nodeId}`}
+          data-active={data.mastery === 'mastered' ? 'true' : 'false'}
+          title={
+            data.mastery === 'mastered'
+              ? '已掌握 · 点击取消'
+              : `当前：${MASTERY_LABELS[data.mastery]} · 点击标为已掌握`
+          }
+          onClick={(event) => {
+            event.stopPropagation()
+            data.onSetMasteryFlag(data.nodeId, 'mastered')
+          }}
+          className={[
+            'grid h-5 w-5 place-items-center rounded-full border text-[10px] font-semibold shadow',
+            data.mastery === 'mastered'
+              ? 'border-akn-ok bg-akn-ok-soft text-akn-ok'
+              : 'border-akn-border bg-akn-panel text-akn-muted/70 hover:border-akn-ok/60 hover:text-akn-ok',
+          ].join(' ')}
+        >
+          ✓
+        </button>
+        <button
+          type="button"
+          data-testid={`doubt-${data.nodeId}`}
+          data-active={data.mastery === 'doubt' ? 'true' : 'false'}
+          title={
+            data.mastery === 'doubt'
+              ? '有疑问 · 点击取消'
+              : `当前：${MASTERY_LABELS[data.mastery]} · 点击标为有疑问`
+          }
+          onClick={(event) => {
+            event.stopPropagation()
+            data.onSetMasteryFlag(data.nodeId, 'doubt')
+          }}
+          className={[
+            'grid h-5 w-5 place-items-center rounded-full border text-[10px] font-semibold shadow',
+            data.mastery === 'doubt'
+              ? 'border-akn-warn bg-akn-warn-soft text-akn-warn'
+              : 'border-akn-border bg-akn-panel text-akn-muted/70 hover:border-akn-warn/60 hover:text-akn-warn',
+          ].join(' ')}
+        >
+          ?
+        </button>
+      </div>
     </div>
   )
 }

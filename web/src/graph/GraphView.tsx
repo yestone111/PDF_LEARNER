@@ -10,7 +10,7 @@ import { useDocumentStore } from '../stores/documentStore'
 import { useGraphStore } from '../stores/graphStore'
 import { KnowledgeNodeView, type KnowledgeNodeData } from './KnowledgeNodeView'
 import { NodeLearningDialog } from './NodeLearningDialog'
-import { toggleNodeMastery } from './graphActions'
+import { setNodeMasteryFlag } from './graphActions'
 import { annotateSummary } from './summaryKeywords'
 import { layeredLayout } from './layout'
 import { gateUnits } from '../llm/pipeline/unitGate'
@@ -267,8 +267,8 @@ export function GraphView(): ReactElement {
             hasFigure: node.figure !== null,
             dimmed: selectedNodeId !== null && !relatedIds.has(node.id),
             selected: selectedNodeId === node.id,
-            onToggleMastery: (nodeId: string) => {
-              void toggleNodeMastery(nodeId)
+            onSetMasteryFlag: (nodeId: string, flag) => {
+              void setNodeMasteryFlag(nodeId, flag)
             },
           },
         }
@@ -484,7 +484,7 @@ export function GraphView(): ReactElement {
       <p data-testid="graph-legend" className="flex flex-wrap gap-x-3 px-3 pt-1 text-[10px] text-akn-muted/80">
         <span>大小 = 关联程度（连边越多越大）</span>
         <span>颜色深浅 = 掌握难度（越深越难）</span>
-        <span>红 = 未掌握 · 绿 = 已掌握 · 黄 = 有疑问（点节点内圆点循环切换）</span>
+        <span>红 = 未掌握 · 绿 = 已掌握 · 黄 = 有疑问（点节点内 ✓ / ? 按钮，同一按钮再点取消）</span>
         <span>从左到右 = 依赖方向</span>
         <span title="L1 定位 · L2 连接 · L3 推断 · L4 组织 · L5 选择">左上角 L1–L5 = 认知层级</span>
       </p>
@@ -531,27 +531,28 @@ export function GraphView(): ReactElement {
                         : 'text-akn-ink/90 hover:bg-akn-raised',
                     ].join(' ')}
                   >
-                    <span className="w-6 shrink-0 font-mono text-akn-muted/70">{index + 1}.</span>
-                    <span className="shrink-0 rounded bg-akn-accent/15 px-1 text-akn-accent">
-                      L{item.cognitiveLevel} {COGNITIVE_LEVEL_LABELS[item.cognitiveLevel]}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate">{item.title}</span>
-                    {/* 与图谱节点同源的状态标记：已掌握 ✓ / 有疑问 ? / 未掌握（空） */}
+                    {/* 与图谱节点同源的掌握标记：行首、带底色圆圈，比原来大一圈 */}
                     <span
                       data-testid={`path-mastery-${id}`}
                       data-state={item.mastery}
                       aria-label={MASTERY_LABELS[item.mastery]}
+                      title={MASTERY_LABELS[item.mastery]}
                       className={[
-                        'ml-auto shrink-0 font-mono text-[11px] leading-4',
+                        'grid h-4 w-4 shrink-0 place-items-center rounded-full border text-[10px] font-bold leading-none',
                         item.mastery === 'mastered'
-                          ? 'text-akn-ok'
+                          ? 'border-akn-ok bg-akn-ok-soft text-akn-ok'
                           : item.mastery === 'doubt'
-                            ? 'text-akn-warn'
-                            : 'text-transparent',
+                            ? 'border-akn-warn bg-akn-warn-soft text-akn-warn'
+                            : 'border-akn-muted/40 text-transparent',
                       ].join(' ')}
                     >
-                      {item.mastery === 'mastered' ? '✓' : item.mastery === 'doubt' ? '?' : '·'}
+                      {item.mastery === 'mastered' ? '✓' : item.mastery === 'doubt' ? '?' : ''}
                     </span>
+                    <span className="w-6 shrink-0 text-right font-mono text-akn-muted/70">{index + 1}.</span>
+                    <span className="shrink-0 rounded bg-akn-accent/15 px-1 text-akn-accent">
+                      L{item.cognitiveLevel} {COGNITIVE_LEVEL_LABELS[item.cognitiveLevel]}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">{item.title}</span>
                   </button>
                 </li>
               )

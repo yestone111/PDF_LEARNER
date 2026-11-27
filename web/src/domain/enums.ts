@@ -17,8 +17,8 @@ export type Importance = (typeof IMPORTANCE_VALUES)[number]
  *   mastered   已掌握（绿）
  *   doubt      有疑问（黄）—— 学过但还没吃透，需要回来再看
  *
- * 点击切换顺序固定为 未掌握 → 已掌握 → 有疑问 → 未掌握（MASTERY_NEXT），
- * 这样「点一下 = 标记已掌握」的老行为不变。
+ * 节点上有两个**显式按钮**（✓ 已掌握 / ? 有疑问），不再用单按钮循环：
+ * 点某个按钮 = 切到该状态；再点同一个 = 取消（回到未掌握）。
  */
 export const MASTERY_STATES = ['unmastered', 'doubt', 'mastered'] as const
 export type MasteryState = (typeof MASTERY_STATES)[number]
@@ -30,12 +30,9 @@ export const MASTERY_LABELS: Readonly<Record<MasteryState, string>> = {
   mastered: '已掌握',
 }
 
-/** 点一下切到哪个状态（顺序：未掌握 → 已掌握 → 有疑问 → 未掌握）。 */
-export const MASTERY_NEXT: Readonly<Record<MasteryState, MasteryState>> = {
-  unmastered: 'mastered',
-  mastered: 'doubt',
-  doubt: 'unmastered',
-}
+/** 节点上的两个显式状态按钮（已掌握 / 有疑问）；未掌握 = 两个都没按。 */
+export const MASTERY_FLAGS = ['mastered', 'doubt'] as const
+export type MasteryFlag = (typeof MASTERY_FLAGS)[number]
 
 /** 节点作用域：global 属于总览图，chapter 属于章节子图（同一实体表，靠 parentId 分层）。 */
 export const NODE_SCOPES = ['global', 'chapter'] as const
