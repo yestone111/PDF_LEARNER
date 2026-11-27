@@ -228,3 +228,20 @@
   只有从 IndexedDB 灌入内容之后才允许保存。
 - 验收：`note-image-check.mjs` 12 项（粘贴 / 拖拽 / 选文件 / 8MB 拒绝 / Markdown 内联 / 刷新后仍在），
   连跑 3 次稳定；`fixtures/note-screenshot.png` 为 16×16 测试图。
+
+## 13. v1.3.7：笔记侧恢复独立滚动
+
+用户反馈：「笔记侧不能单独上下翻滚。」
+
+根因：`RightDock` 的 `<aside>` 与 `NotePanel` 的 `<section>` 都是 CSS Grid 的子项，
+网格子项默认 `min-height: auto` —— 笔记内容一长，右栏被内容撑高、把整个 grid 行顶出去，
+外层 `overflow-hidden` 只裁不滚（实测 `layout-grid` 的 scrollTop 被撑到 2681，
+中栏 top 从 57 被推到 -2600）。这正是「以为右栏在滚，其实是整页在动」。
+
+修法：给右栏与两个面板补 `min-h-0`（`RightDock` 还补了 `overflow-hidden`），
+让高度约束真正传下去，滚动交给笔记区自己的 `flex-1 min-h-0 overflow-y-auto` 容器；
+顺带给 `NotePanel` 加 `relative`（导出弹层本来就想盖住笔记区）。
+
+验收：`scripts/notes-scroll-check.mjs`（6 项）——写 120 段超长内容后：
+右栏滚动容器 `scrollHeight 3262 > clientHeight 565`、能滚到 240px、真实滚轮生效（scrollTop 300），
+中栏 top 不变、整页 scrollTop 恒为 0。

@@ -38,7 +38,7 @@ export function ChatPanel(): ReactElement {
       role="tabpanel"
       aria-labelledby="tab-chat"
       data-testid="pane-chat"
-      className="flex h-full flex-col"
+      className="flex h-full min-h-0 flex-col"
     >
       <div ref={listRef} data-testid="chat-messages" className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3">
         {messages.length === 0 ? (

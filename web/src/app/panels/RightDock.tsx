@@ -21,7 +21,9 @@ export function RightDock(): ReactElement {
       data-testid="panel-right"
       data-collapsed={rightCollapsed ? 'true' : 'false'}
       className={[
-        'min-w-0 flex-col border-l border-akn-border bg-akn-panel',
+        // min-h-0：grid 子项默认 min-height:auto，内容一长就会把整个 grid 顶高、
+        // 变成「整页/整栏一起滚」。加上它，右栏才会被约束在自己的高度里、内部独立滚动。
+        'min-h-0 min-w-0 flex-col overflow-hidden border-l border-akn-border bg-akn-panel',
         rightCollapsed ? 'hidden' : 'flex',
       ].join(' ')}
     >

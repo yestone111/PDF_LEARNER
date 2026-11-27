@@ -268,7 +268,7 @@ export function NotePanel(): ReactElement {
       role="tabpanel"
       aria-labelledby="tab-notes"
       data-testid="pane-notes"
-      className="flex h-full flex-col"
+      className="relative flex h-full min-h-0 flex-col"
     >
       <div className="flex flex-wrap items-center gap-1 border-b border-akn-border px-2 py-1.5">
         <ToolbarButton label="节点卡片" testId="insert-node-card" onClick={insertNodeCard} />

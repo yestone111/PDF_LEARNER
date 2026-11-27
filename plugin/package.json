@@ -1,6 +1,6 @@
 {
   "name": "akn",
-  "version": "1.3.6",
+  "version": "1.3.7",
   "description": "DeepSeek Harness plugin: AI Knowledge Navigator — turn PDFs into a clickable knowledge graph (chapter mastery, bookmarks, annotations, notes). Runs on the host DSH model; no separate API key.",
   "keywords": [
     "dsh-plugin",
